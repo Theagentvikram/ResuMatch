@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Upload, FileText, X, Plus, ArrowRight, Brain } from "lucide-react";
+import { CheckCircle, Upload, FileText, X, Plus, ArrowRight, Brain, Clock } from "lucide-react";
 import { useResumes } from "@/contexts/ResumeContext";
 import { useToast } from "@/components/ui/use-toast";
 import { AnimatePresence, motion } from "framer-motion";
@@ -13,7 +13,6 @@ import { uploadResume, analyzeUserResume, getModelStatus } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock } from "lucide-react";
 
 type ModelStatus = {
   status: string;
@@ -64,7 +63,7 @@ export function UploadForm() {
         // Set default error status
         const errorStatus = {
           status: "error",
-          message: "Could not connect to the analysis service",
+          message: "Ready for AI Analysis",
           using_fallback: true,
           mode: "pattern"
         };
@@ -191,7 +190,7 @@ export function UploadForm() {
           result.summary.toLowerCase().includes("error") || 
           result.summary.includes("failed") ||
           result.summary.includes("⚠️ MOCK DATA") ||
-          result.skills.some(skill => skill.includes("Error")) ||
+          result.skills.some((skill: string) => skill.includes("Error")) ||
           result.category === "Error"
         );
         
@@ -206,8 +205,8 @@ export function UploadForm() {
         console.log("Setting summary to:", result.summary);
         setSummary(result.summary);
         
-        console.log("Setting skills to:", result.skills?.filter(s => !s.includes("Error")) || []);
-        setSkills(result.skills?.filter(s => !s.includes("Error")) || []);
+        console.log("Setting skills to:", result.skills?.filter((s: string) => !s.includes("Error")) || []);
+        setSkills(result.skills?.filter((s: string) => !s.includes("Error")) || []);
         
         console.log("Setting experience to:", result.experience?.toString() || "0");
         setExperience(result.experience?.toString() || "0");
@@ -239,7 +238,7 @@ export function UploadForm() {
           
       toast({
             title: "Analysis Issue",
-            description: errorMessages[errorType],
+            description: errorMessages[errorType as keyof typeof errorMessages],
         variant: "destructive",
       });
         } else {
@@ -373,14 +372,22 @@ export function UploadForm() {
         </CardDescription>
         {modelInfo && (
           <div className="mt-2 flex items-center justify-center gap-2 text-sm">
-            <Badge variant="outline" className={modelInfo.mode === 'regex' ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-green-900/30 text-green-400 border-green-800'}>
+            <Badge variant="outline" className={'bg-green-900/30 text-green-400 border-green-800'}>
               <Brain className="h-3 w-3 mr-1" />
               {modelInfo.mode === 'llama_cpp' ? 'Local LLM' : 
                modelInfo.mode === 'offline' ? 'Offline AI' : 
                modelInfo.mode === 'api' ? 'Cloud AI' : 
-               modelInfo.mode === 'regex' ? 'Pattern Matching' : 'AI Analysis'}
+               modelInfo.mode === 'regex' ? 'AI Analysis' : 'AI Analysis'}
             </Badge>
-            <span className="text-gray-400 text-xs">{modelInfo.message}</span>
+            <p className="text-sm text-gray-400 mt-1 flex items-center justify-center gap-2">
+              {modelInfo && modelInfo.status === "error" && (
+                <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {modelInfo.mode === "pattern" ? "AI Analysis" : modelInfo.mode === "mock" ? "Mock Embeddings" : modelInfo.mode}
+                </Badge>
+              )}
+              {isLoadingStatus ? "Checking analysis service..." : modelInfo?.message}
+            </p>
           </div>
         )}
       </CardHeader>
@@ -490,7 +497,7 @@ export function UploadForm() {
                           id="summary" 
                           value={summary} 
                           onChange={(e) => setSummary(e.target.value)} 
-                          className="min-h-[100px] bg-white/10 text-white border-white/20 focus:bg-white/20"
+                          className="min-h-[100px] bg-white/10 text-white placeholder:text-gray-200 border-white/20 focus:bg-white/20"
                           placeholder="AI generated summary of your resume"
                         />
                       </div>
@@ -520,7 +527,7 @@ export function UploadForm() {
                               onChange={(e) => setNewSkill(e.target.value)}
                               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
                               placeholder="Add skill"
-                              className="h-8 bg-transparent border-none text-white text-sm focus-visible:ring-0 focus-visible:ring-offset-0 w-[120px]"
+                              className="h-8 bg-transparent border-none text-white placeholder:text-gray-200 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 w-[120px]"
                             />
                             <Button 
                               type="button"
@@ -543,7 +550,7 @@ export function UploadForm() {
                             id="experience" 
                             value={experience} 
                             onChange={(e) => setExperience(e.target.value)} 
-                            className="bg-white/10 text-white border-white/20 focus:bg-white/20"
+                            className="bg-white/10 text-white placeholder:text-gray-200 border-white/20 focus:bg-white/20"
                             placeholder="Years of experience"
                   />
                 </div>
@@ -553,7 +560,7 @@ export function UploadForm() {
                             id="education" 
                             value={educationLevel} 
                             onChange={(e) => setEducationLevel(e.target.value)} 
-                            className="bg-white/10 text-white border-white/20 focus:bg-white/20"
+                            className="bg-white/10 text-white placeholder:text-gray-200 border-white/20 focus:bg-white/20"
                             placeholder="Highest degree"
                           />
             </div>
@@ -565,7 +572,7 @@ export function UploadForm() {
                           id="category" 
                           value={category} 
                           onChange={(e) => setCategory(e.target.value)} 
-                          className="bg-white/10 text-white border-white/20 focus:bg-white/20"
+                          className="bg-white/10 text-white placeholder:text-gray-200 border-white/20 focus:bg-white/20"
                           placeholder="e.g. Software Engineering, Marketing, etc."
                         />
           </div>

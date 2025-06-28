@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, BackgroundTasks, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -14,6 +14,7 @@ from pathlib import Path
 import tempfile
 import shutil
 import random
+import re
 
 # Import services
 try:
@@ -134,6 +135,7 @@ class ResumeUploadRequest(BaseModel):
 class SearchQuery(BaseModel):
     query: str
     filters: Optional[dict] = None
+    search_type: Literal["ai_analysis", "resume_matching"] = "ai_analysis"
 
 class AnalysisResult(BaseModel):
     summary: str
@@ -594,13 +596,101 @@ async def get_user_resumes():
             content={"detail": f"Failed to get resumes: {str(e)}"}
         )
 
+def calculate_keyword_match_score(job_query: str, resume: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Calculates a match score for a resume based on a job query using keyword matching,
+    with weighted scores for summary, skills, experience, and education.
+    """
+    score = 0
+    match_reasons = []
+
+    # 1. Summary Match (Weight 0.4)
+    summary_keywords = [word.lower() for word in re.findall(r'\b\w+\b', job_query) if len(word) > 2]
+    summary_hits = 0
+    if resume.get("summary"):
+        resume_summary_lower = resume["summary"].lower()
+        for keyword in summary_keywords:
+            if keyword in resume_summary_lower:
+                summary_hits += 1
+        summary_score = min(summary_hits * 10, 100) # Cap at 100 for summary
+        score += summary_score * 0.4
+        if summary_score > 0:
+            match_reasons.append(f"Summary relevance: {summary_hits} keyword(s) matched.")
+
+    # 2. Skills Match (Weight 0.3)
+    query_skills = [skill.strip().lower() for skill in job_query.split(" ") if skill.strip()]
+    matched_skills_list = []
+    if resume.get("skills"):
+        for r_skill in resume["skills"]:
+            if any(q_skill in r_skill.lower() for q_skill in query_skills):
+                matched_skills_list.append(r_skill)
+        
+        skill_match_count = len(matched_skills_list)
+        # Linear scaling for skills, each skill contributes 20 points up to a max of 100 
+        skill_score = min(skill_match_count * 20, 100) 
+        score += skill_score * 0.3
+        if skill_match_count > 0:
+            match_reasons.append(f"Skills match: {skill_match_count} relevant skill(s) found: {', '.join(matched_skills_list)}.")
+
+    # 3. Experience Match (Weight 0.2)
+    resume_experience_str = str(resume.get("experience", "0")).replace("+", "").strip()
+    resume_experience = 0
+    try:
+        resume_experience = int(float(resume_experience_str))
+    except ValueError:
+        pass # Default to 0 if not a valid number
+
+    # Extract experience years from query using regex (e.g., "2+ years", "3 years experience")
+    experience_match = re.search(r'(\d+)\s*\+?\s*year(?:s)?(?: experience)?', job_query, re.IGNORECASE)
+    required_experience = 0
+    if experience_match:
+        required_experience = int(experience_match.group(1))
+
+    if resume_experience >= required_experience:
+        experience_score = 100 # Full score if meets or exceeds required experience
+        match_reasons.append(f"Experience: Matches required {required_experience}+ years.")
+    elif resume_experience > 0 and required_experience > 0:
+        experience_score = (resume_experience / required_experience) * 100 # Partial score
+        match_reasons.append(f"Experience: {resume_experience} years, {required_experience} years required.")
+    else:
+        experience_score = 0
+    score += experience_score * 0.2
+
+    # 4. Education Level Match (Weight 0.1)
+    query_education_lower = job_query.lower()
+    resume_education_lower = str(resume.get("educationLevel", "")).lower()
+    education_score = 0
+
+    if "master" in query_education_lower and "master" in resume_education_lower:
+        education_score = 100
+    elif "bachelor" in query_education_lower and "bachelor" in resume_education_lower:
+        education_score = 100
+    elif "phd" in query_education_lower and "phd" in resume_education_lower:
+        education_score = 100
+    elif not "master" in query_education_lower and not "bachelor" in query_education_lower and not "phd" in query_education_lower:
+        # If no specific education level is requested, consider any education a partial match
+        if resume_education_lower:
+            education_score = 50
+    
+    if education_score > 0:
+        match_reasons.append(f"Education: {resume.get('educationLevel', 'N/A')} matches query.")
+    score += education_score * 0.1
+
+    final_score = min(100, max(0, int(score))) # Ensure score is between 0 and 100
+    
+    return {
+        "score": final_score,
+        "reason": "; ".join(match_reasons) if match_reasons else "No specific match reasons found for keyword search.",
+        "source": "keyword_matching"
+    }
+
 @app.post("/api/resumes/search")
 async def search_resume(search_query: SearchQuery):
     """
     Search for resumes based on query and filters
     """
     try:
-        print(f"Received search query: {search_query.query}")
+        print(f"Received search query: {search_query.query}, search_type: {search_query.search_type}")
         
         # If no results or no user resumes, return mock data
         mock_results_data = [
@@ -648,56 +738,63 @@ async def search_resume(search_query: SearchQuery):
             results = []
             for resume in USER_RESUMES:
                 resume_content = ""
-                # Try to extract text from PDF or TXT, falling back if needed
-                if resume.get("file_path"):
-                    try:
-                        file_extension = Path(resume["file_path"]).suffix.lower()
-                        if file_extension == ".pdf":
-                            resume_content = extract_text_from_pdf(resume["file_path"])
-                            if not resume_content or len(resume_content.strip()) < 100:
-                                print(f"Warning: Primary PDF extraction failed for {resume['filename']}. Trying pdfplumber fallback.")
-                                resume_content = extract_with_pdfplumber(resume["file_path"])
-                        elif file_extension == ".txt":
-                            with open(resume["file_path"], "r") as f:
-                                resume_content = f.read()
-                        else:
-                            print(f"Warning: Unsupported file format for {resume['filename']}. Skipping LLM scoring.")
-                            llm_score_result = {"score": 0, "reason": "Unsupported file format for LLM analysis.", "source": "unsupported_format_fallback"}
+                score_result = {"score": 0, "reason": "", "source": ""}
 
-                        if resume_content and len(resume_content.strip()) >= 50: # Minimum content length to attempt LLM scoring
-                            # Get LLM-based relevance score
-                            print(f"Getting LLM relevance score for {resume['filename']} with query: {search_query.query[:50]}...")
-                            llm_score_result = await get_relevance_score_with_openrouter(
-                                job_query=search_query.query,
-                                resume_text=resume_content
-                            )
-                            llm_score_result["source"] = llm_score_result.get("source", "openrouter_llm")
-                        else:
-                            print(f"Warning: Not enough content extracted from {resume['filename']}. Using mock score.")
-                            llm_score_result = {"score": random.randint(30, 60), "reason": "Insufficient resume content for LLM analysis.", "source": "mock_content_fallback"}
+                if search_query.search_type == "ai_analysis":
+                    # LLM-based analysis
+                    if resume.get("file_path"):
+                        try:
+                            file_extension = Path(resume["file_path"]).suffix.lower()
+                            if file_extension == ".pdf":
+                                resume_content = extract_text_from_pdf(resume["file_path"])
+                                if not resume_content or len(resume_content.strip()) < 100:
+                                    print(f"Warning: Primary PDF extraction failed for {resume.get('filename', 'N/A')}. Trying pdfplumber fallback.")
+                                    resume_content = extract_with_pdfplumber(resume["file_path"])
+                            elif file_extension == ".txt":
+                                with open(resume["file_path"], "r") as f:
+                                    resume_content = f.read()
+                            else:
+                                print(f"Warning: Unsupported file format for {resume.get('filename', 'N/A')}. Skipping LLM scoring.")
+                                score_result = {"score": 0, "reason": "Unsupported file format for LLM analysis.", "source": "unsupported_format_fallback"}
 
-                    except Exception as e:
-                        print(f"Error processing resume {resume.get('filename', '')}: {str(e)}. Using mock score.")
-                        llm_score_result = {"score": random.randint(30, 60), "reason": f"Error during LLM analysis: {str(e)}", "source": "llm_error_fallback"}
-                else:
-                    print(f"No file_path for {resume.get('filename', '')}. Using mock score.")
-                    llm_score_result = {"score": random.randint(20, 50), "reason": "Resume file path missing.", "source": "no_file_path_fallback"}
+                            if resume_content and len(resume_content.strip()) >= 50: # Minimum content length to attempt LLM scoring
+                                print(f"Getting LLM relevance score for {resume.get('filename', 'N/A')} with query: {search_query.query[:50]}...")
+                                score_result = await get_relevance_score_with_openrouter(
+                                    job_query=search_query.query,
+                                    resume_text=resume_content
+                                )
+                                score_result["source"] = score_result.get("source", "openrouter_llm")
+                            else:
+                                print(f"Warning: Not enough content extracted from {resume.get('filename', 'N/A')}. Using mock score.")
+                                score_result = {"score": random.randint(30, 60), "reason": "Insufficient resume content for LLM analysis.", "source": "mock_content_fallback"}
+
+                        except Exception as e:
+                            print(f"Error processing resume {resume.get('filename', 'N/A')}: {str(e)}. Using mock score.")
+                            score_result = {"score": random.randint(30, 60), "reason": f"Error during LLM analysis: {str(e)}", "source": "llm_error_fallback"}
+                    else:
+                        print(f"No file_path for {resume.get('filename', 'N/A')}. Using mock score.")
+                        score_result = {"score": random.randint(20, 50), "reason": "Resume file path missing.", "source": "no_file_path_fallback"}
+                
+                elif search_query.search_type == "resume_matching":
+                    # Non-LLM based resume matching
+                    score_result = calculate_keyword_match_score(search_query.query, resume)
+                    score_result["source"] = "keyword_matching"
 
                 result = resume.copy()
-                result["match_score"] = llm_score_result["score"]
-                result["match_reason"] = llm_score_result["reason"]
-                result["score_source"] = llm_score_result["source"]
+                result["match_score"] = score_result["score"]
+                result["match_reason"] = score_result["reason"]
+                result["score_source"] = score_result["source"]
                 results.append(result)
             
             # Sort by match score
             results.sort(key=lambda x: x.get("match_score", 0), reverse=True)
             
             if results:
-                print(f"Found {len(results)} matching resumes using LLM scoring")
+                print(f"Found {len(results)} matching resumes using {search_query.search_type} scoring")
                 return results
             else:
-                print("No matches found after LLM scoring attempts, returning mock data.")
-                return mock_results_data # Fallback if LLM scoring yielded no relevant results
+                print(f"No matches found after {search_query.search_type} scoring attempts, returning mock data.")
+                return mock_results_data # Fallback if no relevant results
         else:
             print("No user resumes found, returning mock data.")
             return mock_results_data

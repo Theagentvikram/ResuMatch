@@ -18,7 +18,6 @@ const SearchPage = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("search");
   const [hasError, setHasError] = useState(false);
-  const { searchResults, isSearching } = useResumes();
   
   // Add error boundary effect
   useEffect(() => {
@@ -160,10 +159,10 @@ const SearchPage = () => {
                 >
                   <TabsTrigger 
                     value="search" 
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/20 flex items-center gap-2 transition-all duration-300"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-700 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 flex items-center gap-2 transition-all duration-300"
                   >
-                    <Search className="h-4 w-4" />
-                    Resume Matching
+                    <Brain className="h-4 w-4" />
+                    AI Analysis
                   </TabsTrigger>
                 </motion.div>
                 <motion.div
@@ -172,10 +171,10 @@ const SearchPage = () => {
                 >
                   <TabsTrigger 
                     value="analyze" 
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-700 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 flex items-center gap-2 transition-all duration-300"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/20 flex items-center gap-2 transition-all duration-300"
                   >
-                    <Brain className="h-4 w-4" />
-                    AI Resume Analysis
+                    <Search className="h-4 w-4" />
+                    Resume Matching
                   </TabsTrigger>
                 </motion.div>
               </TabsList>
@@ -188,8 +187,41 @@ const SearchPage = () => {
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
+                    exit={{ opacity: 0, y: 20, transition: { duration: 0.3 } }}
                   >
                     <motion.div 
+                      variants={itemVariants}
+                      className="bg-white/5 backdrop-blur-md p-6 rounded-lg border border-white/10 hover:border-purple-500/20 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300"
+                    >
+                      <div className="flex items-start mb-4">
+                        <div className="bg-purple-500/20 p-2 rounded-full mr-3">
+                          <Brain className="h-5 w-5 text-purple-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold text-white mb-2">AI Resume Analysis</h3>
+                          <p className="text-gray-300">Use advanced AI to find the most relevant candidates based on semantic understanding.</p>
+                        </div>
+                      </div>
+                      <SearchForm searchType="ai_analysis" />
+                    </motion.div>
+
+                    <motion.div variants={itemVariants}>
+                      <h2 className="text-xl font-semibold text-white mb-4">AI Analysis Results</h2>
+                      <ResumeResults />
+                    </motion.div>
+                  </motion.div>
+                </TabsContent>
+              )}
+
+              {activeTab === "analyze" && (
+                <TabsContent value="analyze" className="space-y-8 outline-none">
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit={{ opacity: 0, y: 20, transition: { duration: 0.3 } }}
+                  >
+                    <motion.div
                       variants={itemVariants}
                       className="bg-white/5 backdrop-blur-md p-6 rounded-lg border border-white/10 hover:border-blue-500/20 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300"
                     >
@@ -198,48 +230,16 @@ const SearchPage = () => {
                           <Search className="h-5 w-5 text-blue-400" />
                         </div>
                         <div>
-                          <h2 className="text-xl font-semibold mb-1 text-white">Natural Language Search</h2>
-                          <p className="text-gray-300">
-                            Describe the candidate you're looking for in natural language, 
-                            and our AI will find the best matches from the resume database.
-                          </p>
+                          <h3 className="text-xl font-semibold text-white mb-2">Resume Matching</h3>
+                          <p className="text-gray-300">Find resumes based on keyword relevance, experience, and education level.</p>
                         </div>
                       </div>
-                      <SearchForm />
+                      <SearchForm searchType="resume_matching" />
                     </motion.div>
+
                     <motion.div variants={itemVariants}>
+                      <h2 className="text-xl font-semibold text-white mb-4">Resume Matching Results</h2>
                       <ResumeResults />
-                    </motion.div>
-                  </motion.div>
-                </TabsContent>
-              )}
-              
-              {activeTab === "analyze" && (
-                <TabsContent value="analyze" className="space-y-4 outline-none">
-                  <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                  >
-                    <motion.div 
-                      variants={itemVariants}
-                      className="bg-white/5 backdrop-blur-md p-6 rounded-lg border border-white/10 mb-6 hover:border-purple-500/20 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300"
-                    >
-                      <div className="flex items-start">
-                        <div className="bg-purple-500/20 p-2 rounded-full mr-3">
-                          <Brain className="h-5 w-5 text-purple-400" />
-                        </div>
-                        <div>
-                          <h2 className="text-xl font-semibold mb-1 text-white">AI Resume Analysis</h2>
-                          <p className="text-gray-300">
-                            Upload a resume or paste its content to get an AI-powered analysis of skills, 
-                            experience, and job fit using our Mistral7b/Qwen model.
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                    <motion.div variants={itemVariants}>
-                      <ResumeSummarizer />
                     </motion.div>
                   </motion.div>
                 </TabsContent>

@@ -18,6 +18,11 @@ export const API_ENDPOINTS = {
     GET_SKILLS: `${API_BASE_URL}/api/skills`,
   },
   
+  // Model endpoints
+  MODEL: {
+    STATUS: `${API_BASE_URL}/api/model/status`,
+  },
+  
   // Auth endpoints (for future use)
   AUTH: {
     LOGIN: `${API_BASE_URL}/auth/login`,

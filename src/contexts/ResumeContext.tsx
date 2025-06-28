@@ -15,7 +15,7 @@ interface ResumeContextType {
   searchResults: SearchResult[];
   isSearching: boolean;
   searchQuery: string;
-  search: (query: string) => Promise<void>;
+  search: (query: string, searchType: "ai_analysis" | "resume_matching") => Promise<void>;
   clearSearch: () => void;
   loadUserResumes: () => Promise<void>;
   isLoading: boolean;
@@ -101,14 +101,14 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const search = async (query: string) => {
+  const search = async (query: string, searchType: "ai_analysis" | "resume_matching") => {
     setIsSearching(true);
     setSearchQuery(query);
     try {
       console.log("ResumeContext: Starting search for query:", query);
       
       // Use the API search if available, otherwise use local mock
-      const results = await searchResumesApi(query);
+      const results = await searchResumesApi(query, searchType);
       console.log("ResumeContext: Search results received:", results);
       
       // Ensure we have valid results

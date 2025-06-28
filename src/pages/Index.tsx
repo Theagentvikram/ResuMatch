@@ -85,7 +85,7 @@ const Index = () => {
                 size="lg"
                 variant="outline"
                 className="border-blue-500 text-blue-500 hover:bg-blue-500/10 gap-2 px-8 py-6 text-lg"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/signup")}
               >
                 Sign Up
               </Button>
@@ -290,9 +290,9 @@ const Index = () => {
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { value: "8.6k+", label: "GitHub Stars", color: "blue" },
-              { value: "30k+", label: "Community Users", color: "purple" },
-              { value: "30+", label: "Contributors", color: "green" },
+              { value: "100+", label: "GitHub Stars", color: "blue" },
+              { value: "30+", label: "Community Users", color: "purple" },
+              { value: "3+", label: "Contributors", color: "green" },
               { value: "100%", label: "Open Source", color: "yellow" }
             ].map((stat, index) => (
               <motion.div 

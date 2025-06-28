@@ -18,8 +18,8 @@ const UploadPage = () => {
 
   return (
     <Layout>
-      <div className="py-8">
-        <h1 className="text-3xl font-bold mb-8 text-center">Upload Resume</h1>
+      <div className="min-h-[80vh] flex flex-col justify-center items-center">
+        <h1 className="text-3xl font-bold mb-8 text-center text-white">Upload Resume</h1>
         <UploadForm />
       </div>
     </Layout>

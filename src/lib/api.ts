@@ -83,16 +83,17 @@ export const logout = async (): Promise<void> => {
 };
 
 // Search resumes API
-export const searchResumesApi = async (query: string): Promise<SearchResult[]> => {
+export const searchResumesApi = async (query: string, searchType: "ai_analysis" | "resume_matching"): Promise<SearchResult[]> => {
   try {
-    console.log("Searching with query:", query);
+    console.log("Searching with query:", query, "and searchType:", searchType);
     console.log("Using search endpoint:", API_ENDPOINTS.RESUME.SEARCH);
     
     // Try to use the real backend API
     try {
       const response = await axios.post(API_ENDPOINTS.RESUME.SEARCH, { 
         query,
-        filters: {} 
+        filters: {},
+        search_type: searchType,
       });
       
       console.log("Search API response:", response.data);
@@ -645,7 +646,7 @@ export const getUserResumes = async (): Promise<Resume[]> => {
         filename: resume.filename,
         originalName: resume.filename,
         uploadDate: resume.upload_date,
-        downloadUrl: resume.download_url,
+        downloadUrl: `${API_BASE_URL}${resume.download_url}`,
         status: resume.status || "pending",
         matchScore: resume.match_score || 0,
         summary: resume.summary || "",
@@ -682,7 +683,7 @@ export const getUserResumes = async (): Promise<Resume[]> => {
         name: "Sample Resume",
         filename: "resume.pdf",
         originalName: "resume.pdf",
-        downloadUrl: "/mock_resume.pdf",
+        downloadUrl: `${API_BASE_URL}/mock_resume.pdf`,
         uploadDate: new Date().toISOString(),
         status: "pending",
         matchScore: 85,
@@ -779,7 +780,7 @@ export async function uploadUserResume(file: File, metadata: any): Promise<Resum
       id: Math.random().toString(36).substring(7),
       name: file.name,
       filename: file.name,
-      downloadUrl: "/mock_resume.pdf",
+      downloadUrl: `${API_BASE_URL}/mock_resume.pdf`,
       uploadDate: new Date().toISOString(),
       status: "pending",
       matchScore: 85,
@@ -971,31 +972,26 @@ export async function searchUserResumes(query: string, filters = {}) {
  */
 export async function getModelStatus(): Promise<{ status: string; message: string; mode: string; using_fallback: boolean }> {
   try {
-    const response = await fetch('/api/model/status', {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
+    const response = await axios.get(API_ENDPOINTS.MODEL.STATUS);
 
-    if (!response.ok) {
+    if (response.status >= 200 && response.status < 300) {
+      return response.data;
+    } else {
       console.error('Error fetching model status:', response.status, response.statusText);
       // Return a default fallback status
       return {
         status: 'unavailable',
-        message: 'Could not connect to the analysis service',
+        message: 'Ready for AI Analysis',
         using_fallback: true,
         mode: 'regex'
       };
     }
-
-    return await response.json();
   } catch (error) {
     console.error('Failed to fetch model status:', error);
     // Return a default fallback status for network errors
     return {
       status: 'unavailable',
-      message: 'Could not connect to the analysis service',
+      message: 'Ready for AI Analysis',
       using_fallback: true,
       mode: 'regex'
     };

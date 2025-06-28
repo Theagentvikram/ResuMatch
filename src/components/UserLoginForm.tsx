@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,7 +35,7 @@ export function UserLoginForm() {
       } else {
         toast({
           title: "Login failed",
-          description: "Invalid credentials or you don't have applicant access. Try using 'user' with password 'password123'.",
+          description: "Invalid credentials or you don't have applicant access. Please check your email and password, or sign up if you don't have an account.",
           variant: "destructive",
         });
       }

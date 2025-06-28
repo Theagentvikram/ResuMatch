@@ -17,6 +17,8 @@ import SearchPage from "./pages/SearchPage";
 import UploadStatusPage from "./pages/UploadStatusPage";
 import ResumeDetailsPage from "./pages/ResumeDetailsPage";
 import NotFound from "./pages/NotFound";
+import { RecruiterResumesManagementPage } from "./pages/RecruiterResumesManagementPage";
+import SignupPage from "./pages/SignupPage";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,7 @@ const App = () => (
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
               <Route path="/recruiter-login" element={<RecruiterLoginPage />} />
               <Route path="/user-login" element={<UserLoginPage />} />
               
@@ -67,6 +70,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredUserType="recruiter">
                     <SearchPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/recruiter/resumes-management" 
+                element={
+                  <ProtectedRoute requiredUserType="recruiter">
+                    <RecruiterResumesManagementPage />
                   </ProtectedRoute>
                 } 
               />

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useResumes } from "@/contexts/ResumeContext";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -100,12 +99,15 @@ export function ResumeResults() {
                 </div>
 
                 {result.matchReason && (
-                  <div className="mt-3 p-2 bg-blue-50 text-blue-700 rounded-md text-xs">
-                    <div className="flex gap-1 items-center font-medium">
+                  <div className="mt-3 p-2 bg-blue-50 text-blue-700 rounded-md" style={{ maxHeight: '100px', overflowY: 'auto' }}>
+                    <div className="flex gap-1 items-center font-medium text-sm">
                       <CheckCheck className="h-3.5 w-3.5" />
                       Match reasons:
                     </div>
-                    <p className="mt-1">{result.matchReason}</p>
+                    <p className="mt-1 text-sm whitespace-normal w-full break-words">{result.matchReason}</p>
+                    {result.scoreSource && (
+                      <p className="mt-1 text-gray-600 text-sm">Score source: {result.scoreSource.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                    )}
                   </div>
                 )}
               </CardContent>

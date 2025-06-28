@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 
-export function SearchForm() {
+interface SearchFormProps {
+  searchType: "ai_analysis" | "resume_matching";
+}
+
+export function SearchForm({ searchType }: SearchFormProps) {
   const [query, setQuery] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
   const { search, isSearching } = useResumes();
@@ -21,7 +24,7 @@ export function SearchForm() {
     if (query.trim()) {
       try {
         console.log("Submitting search query:", query);
-        await search(query);
+        await search(query, searchType);
       } catch (error) {
         console.error("Search error:", error);
         setSearchError("There was an error processing your search. Please try again.");
@@ -43,7 +46,7 @@ export function SearchForm() {
 
   const handleSampleQuery = (sampleQuery: string) => {
     setQuery(sampleQuery);
-    search(sampleQuery);
+    search(sampleQuery, searchType);
   };
 
   return (

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { FileText, Search, Upload, UserCheck, Eye, Shield, Code, Zap, Database, Cpu } from "lucide-react";
@@ -244,15 +243,15 @@ export function Landing() {
             viewport={{ once: true }}
           >
             <div className="text-center">
-              <h3 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-300 mb-2">8.6k+</h3>
+              <h3 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-300 mb-2">100+</h3>
               <p className="text-gray-400">GitHub Stars</p>
             </div>
             <div className="text-center">
-              <h3 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-300 mb-2">30k+</h3>
+              <h3 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-300 mb-2">30+</h3>
               <p className="text-gray-400">Community Users</p>
             </div>
             <div className="text-center">
-              <h3 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-300 mb-2">30+</h3>
+              <h3 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-300 mb-2">3</h3>
               <p className="text-gray-400">Contributors</p>
             </div>
             <div className="text-center">

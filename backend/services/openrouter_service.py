@@ -412,7 +412,7 @@ def get_openrouter_model_status(fallback_to_mock: bool = True) -> Dict[str, Any]
             if model_available:
                 return {
                     "status": "available",
-                    "message": f"OpenRouter API and model {OPENROUTER_MODEL} are available"
+                    "message": f"Ready for AI Analysis"
                 }
             else:
                 logger.warning(f"OpenRouter API is available but model {OPENROUTER_MODEL} was not found")

@@ -40,6 +40,29 @@ def init_db():
         embedding TEXT
     )
     ''')
+
+    # Create users table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        hashed_password TEXT,
+        is_verified INTEGER DEFAULT 0,
+        google_id TEXT,
+        created_at TEXT
+    )
+    ''')
+
+    # Create email verification tokens table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS email_verification_tokens (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        token TEXT NOT NULL,
+        created_at TEXT,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+    )
+    ''')
     
     conn.commit()
     conn.close()

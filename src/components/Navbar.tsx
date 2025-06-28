@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { FileText, Search, Upload, User, ChevronDown, LogOut, BarChart } from "lucide-react";
+import { FileText, Search, Upload, User, ChevronDown, LogOut, BarChart, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -67,7 +67,7 @@ export function Navbar() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="border-white/20 hover:bg-white/10 text-white gap-1">
+                  <Button variant="default" size="sm" className="bg-white text-blue-600 hover:bg-gray-100 hover:text-blue-700 gap-1">
                     <User className="h-4 w-4" />
                     <span className="hidden md:inline">{user?.username}</span>
                     {userType && (
@@ -92,6 +92,11 @@ export function Navbar() {
                       <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
                         <Link to="/search?tab=analyze" className="flex items-center w-full">
                           <BarChart className="h-4 w-4 mr-2" /> AI Resume Analysis
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
+                        <Link to="/recruiter/resumes-management" className="flex items-center w-full">
+                          <Trash2 className="h-4 w-4 mr-2" /> Manage Resumes
                         </Link>
                       </DropdownMenuItem>
                     </>
@@ -126,7 +131,7 @@ export function Navbar() {
             <>
               <div className="hidden sm:flex space-x-3">
                 <Link to="/recruiter-login">
-                  <Button variant="outline" size="sm" className="border-blue-400/30 text-blue-400 hover:bg-blue-900/30">
+                  <Button variant="outline" size="sm" className="border-blue-400/30 text-blue-400 hover:bg-blue-600 hover:text-white">
                     Recruiter Login
                   </Button>
                 </Link>
