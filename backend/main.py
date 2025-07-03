@@ -86,6 +86,7 @@ app.add_middleware(
         "https://resume-ai-pink-eight.vercel.app",
         "http://localhost:5173",  # For local development
         "http://localhost:8000",  # For local development
+        "https://resumatcher.netlify.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
