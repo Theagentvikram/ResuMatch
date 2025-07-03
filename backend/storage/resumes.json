@@ -186,5 +186,43 @@
     "educationLevel": "Bachelor's",
     "category": "Data Science",
     "file_path": "storage/resumes/772134ff-08b0-40bd-adee-1aa184d1ed14_Abhee Resume - Updated.pdf"
+  },
+  {
+    "id": "ad150af0-c1b6-4270-bc2c-7ee64306055b",
+    "filename": "Abhee Resume.pdf",
+    "download_url": "/api/resumes/download/ad150af0-c1b6-4270-bc2c-7ee64306055b",
+    "upload_date": "2025-06-29T19:36:37.800119",
+    "status": "processed",
+    "match_score": 74,
+    "summary": "Abhinay Cherupally is a student pursuing a Bachelor's degree in Artificial Intelligence and Machine Learning, with a strong foundation in data science. He has demonstrated his technical skills through projects with Intel and his passion for tech writing by creating engaging SEO-optimized blog content on tech topics, effectively boosting website traffic. His strengths lie in SEO optimization, content writing, digital marketing, email marketing, blogging, communication, adaptability, and a love for using technology to solve real-world problems. He holds certifications from Google, Skillshare, Udemy, IBM, and various internships in data science and machine learning.",
+    "skills": [
+      "Java",
+      "Basic Data Structures",
+      "Python",
+      "C/C++",
+      "Basic AWS",
+      "SQL",
+      "HTML",
+      "CSS3",
+      "JavaScript",
+      "Machine Learning",
+      "Linux",
+      "SEO Optimization",
+      "Content Writing",
+      "Digital Marketing",
+      "Email Marketing",
+      "Blogging",
+      "Communication Skills",
+      "Adaptability",
+      "Fake News Detection Using Machine Learning",
+      "Pneumonia Detection using Deep Learning",
+      "Detecting Pneumonia using Images",
+      "Pixel Tales, Image to Story using CNN",
+      "Converts Image into a beautiful story"
+    ],
+    "experience": "3",
+    "educationLevel": "Bachelor's",
+    "category": "Data Science",
+    "file_path": "storage/resumes/ad150af0-c1b6-4270-bc2c-7ee64306055b_Abhee Resume.pdf"
   }
 ]
