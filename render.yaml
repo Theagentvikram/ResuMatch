@@ -15,5 +15,9 @@ services:
         sync: false
       - key: OPENROUTER_API_KEY
         sync: false
+        # Note: Set this value directly in the Render dashboard
+        # Do not include the "Bearer " prefix in the API key
       - key: OPENROUTER_MODEL
-        sync: false 
+        value: mistralai/mistral-7b-instruct:free
+      - key: PORT
+        value: 8000 

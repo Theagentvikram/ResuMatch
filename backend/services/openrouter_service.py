@@ -16,19 +16,48 @@ logger = logging.getLogger(__name__)
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'), override=True)
 
 # OpenRouter API settings - load from environment but with fallbacks
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "mistralai/mistral-7b-instruct:free")
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "mistralai/mistral-7b-instruct:free")
 OPENROUTER_CHAT_COMPLETIONS_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL_NAME = os.getenv("OPENROUTER_MODEL_NAME", "mistralai/mistral-7b-instruct:free")
+OPENROUTER_MODEL_NAME = os.environ.get("OPENROUTER_MODEL_NAME", "mistralai/mistral-7b-instruct:free")
 
-# Print the API key for debugging (first 10 chars and last 5 chars only for security)
-logger.info(f"Loaded OpenRouter API key: {OPENROUTER_API_KEY[:10]}...{OPENROUTER_API_KEY[-5:]}")
+# Only log API key info if it exists
+if OPENROUTER_API_KEY:
+    # Print the API key for debugging (first 5 chars and last 3 chars only for security)
+    if len(OPENROUTER_API_KEY) > 8:
+        logger.info(f"Loaded OpenRouter API key: {OPENROUTER_API_KEY[:5]}...{OPENROUTER_API_KEY[-3:]}")
+        logger.info(f"API key length: {len(OPENROUTER_API_KEY)} characters")
+    else:
+        logger.warning("OpenRouter API key is too short or empty")
+else:
+    logger.warning("No OpenRouter API key found in environment variables")
+
 logger.info(f"Using model: {OPENROUTER_MODEL}")
 
-# Log the API key being used (first 10 chars and last 5 chars only for security)
-logger.info(f"Using OpenRouter API key: {OPENROUTER_API_KEY[:10]}...{OPENROUTER_API_KEY[-5:]}")
-logger.info(f"API key length: {len(OPENROUTER_API_KEY)} characters")
+
+def analyze_resume_with_openrouter(resume_text: str, fallback_to_mock: bool = True) -> Dict[str, Any]:
+    """
+    Analyze a resume using the OpenRouter API with Mistral model
+    
+    Args:
+        resume_text: The text of the resume to analyze
+        fallback_to_mock: Whether to fall back to mock data if the API call fails
+        
+    Returns:
+        Dict containing the analysis results or mock data if fallback_to_mock is True
+    """
+    logger.info("Starting OpenRouter API resume analysis with Mistral model")
+    
+    # Only log API key info if it exists
+    if OPENROUTER_API_KEY:
+        if len(OPENROUTER_API_KEY) > 8:
+            logger.info(f"Using OpenRouter API key: {OPENROUTER_API_KEY[:5]}...{OPENROUTER_API_KEY[-3:]}")
+            logger.info(f"API key length: {len(OPENROUTER_API_KEY)} characters")
+        else:
+            logger.warning("OpenRouter API key is too short for use")
+    else:
+        logger.warning("No OpenRouter API key available for this request")
 
 
 def analyze_resume_with_openrouter(resume_text: str, fallback_to_mock: bool = True) -> Dict[str, Any]:
@@ -83,7 +112,16 @@ Based on the resume above, extract and return ONLY the following information in 
 
 Format your response as a valid JSON object with these five keys. DO NOT include any explanations before or after the JSON. Ensure the JSON is properly formatted and valid."""
     
-    # Set up the headers with authentication - try a different approach
+    # Check if we have an API key before proceeding
+    if not OPENROUTER_API_KEY:
+        logger.error("No OpenRouter API key available. Cannot proceed with API call.")
+        if fallback_to_mock:
+            logger.info("Falling back to mock data")
+            return generate_mock_analysis(resume_text)
+        else:
+            raise ValueError("OpenRouter API key is missing and fallback is disabled")
+    
+    # Set up the headers with authentication
     # Remove 'Bearer ' prefix if it's already in the key
     api_key = OPENROUTER_API_KEY
     if api_key.startswith("Bearer "):
@@ -91,12 +129,14 @@ Format your response as a valid JSON object with these five keys. DO NOT include
     
     headers = {
         "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://resumatcher.netlify.app",  # Add a referer to help with API tracking
+        "X-Title": "ResuMatch"  # Add a title to identify your application
     }
     
-    # Log the headers for debugging
-    logger.info(f"Using Authorization header: Bearer {api_key[:10]}...{api_key[-5:]}")
-    logger.info(f"Full API key being used: {api_key}")
+    # Log the headers for debugging (safely)
+    if len(api_key) > 8:
+        logger.info(f"Using Authorization header: Bearer {api_key[:5]}...{api_key[-3:]}")
     logger.info(f"Using Content-Type: {headers['Content-Type']}")
     logger.info(f"API key length: {len(api_key)} characters")
     
@@ -117,8 +157,12 @@ Format your response as a valid JSON object with these five keys. DO NOT include
         # Make the API call
         logger.info(f"Sending request to OpenRouter API with model: {OPENROUTER_MODEL}")
         logger.info(f"API URL: {OPENROUTER_API_URL}")
-        logger.info(f"API Key (first 10 chars): {OPENROUTER_API_KEY[:10]}...")
-        logger.info(f"Headers: {headers}")
+        
+        # Log headers without sensitive information
+        safe_headers = headers.copy()
+        if "Authorization" in safe_headers:
+            safe_headers["Authorization"] = "Bearer [REDACTED]"
+        logger.info(f"Headers: {safe_headers}")
         logger.info(f"Payload: {json.dumps(payload)[:500]}...")
         
         # Set a timeout to avoid hanging indefinitely
