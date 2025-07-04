@@ -12,10 +12,12 @@ import httpx
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables with force reload
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'), override=True)
+# Load environment variables with force reload, but only if .env file exists
+env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+if os.path.exists(env_path):
+    load_dotenv(env_path, override=False)  # Don't override existing env vars
 
-# OpenRouter API settings - load from environment but with fallbacks
+# OpenRouter API settings - prioritize environment variables
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "mistralai/mistral-7b-instruct:free")

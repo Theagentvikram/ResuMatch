@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
+# Remove any .env file to ensure we use environment variables from Render
+RUN rm -f .env
+
 # Expose the port the app runs on (Render will set PORT env var)
 ENV PORT=8000
 
