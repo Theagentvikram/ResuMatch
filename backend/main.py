@@ -160,6 +160,13 @@ async def root():
     """
     return {"status": "ok", "message": "ResuMatch API is running"}
 
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint for Render
+    """
+    return {"status": "healthy", "message": "ResuMatch API is healthy"}
+
 @app.get("/api/model/status", response_model=ModelStatusResponse)
 async def model_status():
     """

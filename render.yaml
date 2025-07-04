@@ -1,18 +1,12 @@
 services:
   - type: web
-    name: resumatcher-backend
+    name: resumatch-backend
     env: docker
-    region: oregon
+    dockerfilePath: ./backend/Dockerfile
+    buildCommand: echo "Docker build handled by Render"
     plan: free
-    branch: main
-    dockerfilePath: ./Dockerfile
-    numInstances: 1
     healthCheckPath: /health
     envVars:
-      - key: PORT
-        value: 8000
-      - key: HOST
-        value: 0.0.0.0
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY

@@ -2,7 +2,10 @@ services:
   - type: web
     name: resumatch-backend
     env: docker
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./backend/Dockerfile
+    buildCommand: echo "Docker build handled by Render"
+    plan: free
+    healthCheckPath: /health
     envVars:
       - key: SUPABASE_URL
         sync: false
