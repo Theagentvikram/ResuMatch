@@ -631,10 +631,13 @@ export const getMatchById = async (id: string) => {
 // Get user's uploaded resumes
 export const getUserResumes = async (): Promise<Resume[]> => {
   try {
-    console.log("Fetching user resumes");
+    console.log("Fetching user resumes from:", API_ENDPOINTS.RESUME.GET_ALL);
     
     // Try to fetch from the backend first
-    const response = await axios.get(API_ENDPOINTS.RESUME.GET_ALL);
+    const response = await axios.get(API_ENDPOINTS.RESUME.GET_ALL, {
+      // Add a longer timeout for slower connections
+      timeout: 10000
+    });
     
     console.log("Resume fetch response:", response.status, response.data);
     
@@ -646,7 +649,7 @@ export const getUserResumes = async (): Promise<Resume[]> => {
         filename: resume.filename,
         originalName: resume.filename,
         uploadDate: resume.upload_date,
-        downloadUrl: `${API_BASE_URL}${resume.download_url}`,
+        downloadUrl: resume.download_url.startsWith('http') ? resume.download_url : `${API_BASE_URL}${resume.download_url}`,
         status: resume.status || "pending",
         matchScore: resume.match_score || 0,
         summary: resume.summary || "",
