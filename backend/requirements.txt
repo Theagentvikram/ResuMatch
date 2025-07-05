@@ -16,3 +16,4 @@ sentence-transformers==2.2.2
 llama-cpp-python==0.2.19
 setuptools>=65.5.1
 wheel>=0.38.4
+python-docx==0.8.11

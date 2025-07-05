@@ -27,4 +27,6 @@ export interface SearchResult {
   resume: Resume;
   matchScore: number;
   matchReason?: string;
+  scoreSource?: string;
+  jobDescriptionSkills?: string[];
 }

@@ -6,7 +6,7 @@
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (window.location.hostname === 'localhost' 
     ? "http://localhost:8000" 
-    : "https://resumatch-backend.onrender.com");
+    : "https://resumatcher-f9s9.onrender.com");
 
 // API endpoints
 export const API_ENDPOINTS = {

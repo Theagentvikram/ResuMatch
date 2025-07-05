@@ -1,6 +1,5 @@
-
 import { Layout } from "@/components/Layout";
-import { LoginForm } from "@/components/LoginForm";
+import { UserLoginForm } from "@/components/UserLoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -120,7 +119,7 @@ const LoginPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <LoginForm />
+          <UserLoginForm mode="login" />
         </motion.div>
       </div>
     </Layout>

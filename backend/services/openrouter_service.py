@@ -37,7 +37,6 @@ else:
 
 logger.info(f"Using model: {OPENROUTER_MODEL}")
 
-
 def analyze_resume_with_openrouter(resume_text: str, fallback_to_mock: bool = True) -> Dict[str, Any]:
     """
     Analyze a resume using the OpenRouter API with Mistral model
@@ -61,20 +60,6 @@ def analyze_resume_with_openrouter(resume_text: str, fallback_to_mock: bool = Tr
     else:
         logger.warning("No OpenRouter API key available for this request")
 
-
-def analyze_resume_with_openrouter(resume_text: str, fallback_to_mock: bool = True) -> Dict[str, Any]:
-    """
-    Analyze a resume using the OpenRouter API with Mistral model
-    
-    Args:
-        resume_text: The text of the resume to analyze
-        fallback_to_mock: Whether to fall back to mock data if the API call fails
-        
-    Returns:
-        Dict containing the analysis results or mock data if fallback_to_mock is True
-    """
-    logger.info("Starting OpenRouter API resume analysis with Mistral model")
-    
     # Clean and truncate text if needed
     # Truncate to ~6000 characters to be safe
     max_chars = 6000
@@ -594,3 +579,49 @@ def generate_mock_score() -> Dict[str, Any]:
     Generates a mock score and reason.
     """
     return {"score": random.randint(50, 99), "reason": "Mock score: LLM API not available or failed."}
+
+async def get_openrouter_response(prompt: str) -> str:
+    """
+    Get a simple text response from OpenRouter API
+    """
+    if not OPENROUTER_API_KEY:
+        raise Exception("OpenRouter API key not available")
+    
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://resumatch.ai",
+        "X-Title": "ResuMatch AI Resume Analysis"
+    }
+    
+    data = {
+        "model": OPENROUTER_MODEL,
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 500,
+        "temperature": 0.7
+    }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                OPENROUTER_API_URL,
+                headers=headers,
+                json=data,
+                timeout=30.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result["choices"][0]["message"]["content"]
+            else:
+                logger.error(f"OpenRouter API error: {response.status_code} - {response.text}")
+                raise Exception(f"API error: {response.status_code}")
+                
+    except Exception as e:
+        logger.error(f"Error calling OpenRouter API: {str(e)}")
+        raise

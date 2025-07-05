@@ -18,6 +18,7 @@ const SearchPage = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("search");
   const [hasError, setHasError] = useState(false);
+  const [jobDescriptionSkills, setJobDescriptionSkills] = useState<string[]>([]);
   
   // Add error boundary effect
   useEffect(() => {
@@ -202,12 +203,15 @@ const SearchPage = () => {
                           <p className="text-gray-300">Use advanced AI to find the most relevant candidates based on semantic understanding.</p>
                         </div>
                       </div>
-                      <SearchForm searchType="ai_analysis" />
+                      <SearchForm 
+                        searchType="ai_analysis" 
+                        onJobDescriptionUpdate={setJobDescriptionSkills}
+                      />
                     </motion.div>
 
                     <motion.div variants={itemVariants}>
                       <h2 className="text-xl font-semibold text-white mb-4">AI Analysis Results</h2>
-                      <ResumeResults />
+                      <ResumeResults jobDescriptionSkills={jobDescriptionSkills} />
                     </motion.div>
                   </motion.div>
                 </TabsContent>
@@ -234,12 +238,15 @@ const SearchPage = () => {
                           <p className="text-gray-300">Find resumes based on keyword relevance, experience, and education level.</p>
                         </div>
                       </div>
-                      <SearchForm searchType="resume_matching" />
+                      <SearchForm 
+                        searchType="resume_matching" 
+                        onJobDescriptionUpdate={setJobDescriptionSkills}
+                      />
                     </motion.div>
 
                     <motion.div variants={itemVariants}>
                       <h2 className="text-xl font-semibold text-white mb-4">Resume Matching Results</h2>
-                      <ResumeResults />
+                      <ResumeResults jobDescriptionSkills={jobDescriptionSkills} />
                     </motion.div>
                   </motion.div>
                 </TabsContent>

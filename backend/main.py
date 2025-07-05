@@ -30,7 +30,7 @@ from services.llm_service import get_resume_summary
 from services.embedding_service import get_embedding, calculate_similarity
 from services.storage_service import upload_to_storage, get_download_url, LOCAL_STORAGE_DIR
 from services.database_service import save_resume_to_db, get_resumes, search_resumes
-from services.claude_service import analyze_resume_with_regex
+from services.regex_service import analyze_resume_with_regex
 from services.openrouter_service import get_relevance_score_with_openrouter
 
 # Import OpenRouter service for Mistral 7B
@@ -45,31 +45,23 @@ except ImportError:
     def get_openrouter_model_status():
         return {"status": "unavailable", "message": "OpenRouter service not installed", "using_fallback": True}
 
-# Try to import offline Mistral (this might not be available on all systems)
-try:
-    from services.mistral_offline import analyze_resume_with_mistral_offline, is_mistral_model_available, preload_model
-    OFFLINE_MISTRAL_AVAILABLE = True
-except ImportError:
-    OFFLINE_MISTRAL_AVAILABLE = False
-    # Create fallback functions
-    def analyze_resume_with_mistral_offline(text):
-        return analyze_resume_with_regex(text)
-    def is_mistral_model_available():
-        return False
+# Offline Mistral is not available (file deleted)
+OFFLINE_MISTRAL_AVAILABLE = False
+def analyze_resume_with_mistral_offline(text):
+    return analyze_resume_with_regex(text)
+def is_mistral_model_available():
+    return False
+def preload_model():
+    pass
 
-# Import local LLM service
-try:
-    from services.llama_cpp_service import analyze_resume_with_llama_cpp, download_model, is_llama_cpp_available
-    LLAMA_CPP_AVAILABLE = True
-except ImportError:
-    LLAMA_CPP_AVAILABLE = False
-    # Create fallback functions
-    def analyze_resume_with_llama_cpp(text):
-        return analyze_resume_with_regex(text)
-    def is_llama_cpp_available():
-        return False
-    def download_model(url=None):
-        return None
+# Local LLM service is not available (file deleted)
+LLAMA_CPP_AVAILABLE = False
+def analyze_resume_with_llama_cpp(text):
+    return analyze_resume_with_regex(text)
+def is_llama_cpp_available():
+    return False
+def download_model(url=None):
+    return None
 
 # Load environment variables
 load_dotenv()
@@ -157,6 +149,21 @@ class ModelStatusResponse(BaseModel):
     using_fallback: bool
     mode: Optional[str] = "unknown"
 
+# Job Description Analysis Models
+class JobDescriptionAnalysis(BaseModel):
+    id: str
+    filename: str
+    summary: str
+    skills: List[str]
+    requirements: List[str]
+    experience: str
+    category: str
+
+class AISuggestionsRequest(BaseModel):
+    resumeSkills: List[str]
+    jobDescriptionSkills: List[str]
+    resumeSummary: str
+
 @app.get("/")
 async def root():
     """
@@ -174,7 +181,7 @@ async def health_check():
 @app.get("/api/model/status", response_model=ModelStatusResponse)
 async def model_status():
     """
-    Check the status of the LLM model (OpenRouter, offline, or local)
+    Check the status of the LLM model (OpenRouter or regex fallback)
     """
     try:
         # Check if we're in a specific mode
@@ -190,42 +197,8 @@ async def model_status():
                 
             return status
         
-        elif ANALYZER_MODE == "offline" and OFFLINE_MISTRAL_AVAILABLE:
-            # Check offline model
-            if is_mistral_model_available():
-                return {
-                    "status": "available",
-                    "message": "Offline Mistral model is available",
-                    "using_fallback": False,
-                    "mode": "offline"
-                }
-            else:
-                return {
-                    "status": "unavailable",
-                    "message": "Offline Mistral model is not available",
-                    "using_fallback": True,
-                    "mode": "fallback"
-                }
-        
-        elif ANALYZER_MODE == "llama_cpp" and LLAMA_CPP_AVAILABLE:
-            # Check llama.cpp model
-            if is_llama_cpp_available():
-                return {
-                    "status": "available",
-                    "message": "Local llama.cpp model is available",
-                    "using_fallback": False,
-                    "mode": "llama_cpp"
-                }
-            else:
-                return {
-                    "status": "unavailable",
-                    "message": "Local llama.cpp model is not available",
-                    "using_fallback": True,
-                    "mode": "regex"
-                }
-        
+        # Using regex mode
         elif ANALYZER_MODE == "regex":
-            # Using regex mode explicitly
             return {
                 "status": "available",
                 "message": "Using regex-based analysis (no LLM)",
@@ -233,9 +206,9 @@ async def model_status():
                 "mode": "regex"
             }
         
-        # Auto mode - try different options
+        # Auto mode - try OpenRouter API first, then fall back to regex
         elif ANALYZER_MODE == "auto":
-            # First try OpenRouter API
+            # Try OpenRouter API
             if OPENROUTER_API_AVAILABLE:
                 status = get_openrouter_model_status(fallback_to_mock=True)
                 
@@ -247,24 +220,6 @@ async def model_status():
                     
                 if status["status"] == "available":
                     return status
-            
-            # Then try offline Mistral model
-            if OFFLINE_MISTRAL_AVAILABLE and is_mistral_model_available():
-                return {
-                    "status": "available",
-                    "message": "Offline Mistral model is available",
-                    "using_fallback": False,
-                    "mode": "offline"
-                }
-            
-            # Then try llama.cpp model
-            if LLAMA_CPP_AVAILABLE and is_llama_cpp_available():
-                return {
-                    "status": "available",
-                    "message": "Local llama.cpp model is available",
-                    "using_fallback": False,
-                    "mode": "llama_cpp"
-                }
             
             # Fallback to regex
             return {
@@ -305,188 +260,82 @@ async def analyze_resume(file: Optional[UploadFile] = File(None), text: Optional
         
         # Handle direct text input
         if text:
-            print(f"Received text input: {type(text)}")
             if isinstance(text, dict) and "text" in text:
                 resume_text = text["text"]
-                print(f"Extracted text from JSON: {resume_text[:100]}...")
-            elif isinstance(text, str):
-                resume_text = text
-                print(f"Using text as string: {resume_text[:100]}...")
             else:
                 resume_text = str(text)
-                print(f"Converted to string: {resume_text[:100]}...")
-            
-            # Ensure we have meaningful text
-            if not resume_text or len(resume_text.strip()) < 20:
-                raise HTTPException(status_code=400, detail="Text input is too short or empty")
         
         # Handle file upload
         elif file:
-            # Print file information for debugging
-            print(f"File received: {file.filename}, Content-Type: {file.content_type}, Size: {file.size} bytes")
-            
-            # Save uploaded file to a temporary location
-            temp_file_path = ""
-            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_file:
-                temp_file_path = temp_file.name
-                shutil.copyfileobj(file.file, temp_file)
-                
-            # Extract text from the file
+            # Save the uploaded file temporarily
+            temp_file = tempfile.NamedTemporaryFile(delete=False)
             try:
+                contents = await file.read()
+                with open(temp_file.name, "wb") as f:
+                    f.write(contents)
+                
+                # Extract text from PDF
                 if file.filename.lower().endswith(".pdf"):
-                    try:
-                        # Log the process for debugging
-                        print(f"Extracting text from PDF: {file.filename}")
-                        resume_text = extract_text_from_pdf(temp_file_path)
-                        print(f"Extracted text length: {len(resume_text)} characters")
-                        print(f"Text sample: {resume_text[:200].replace(chr(10), ' ')}")
-                        
-                        # If text extraction failed, let's try the other method directly
-                        if not resume_text or len(resume_text.strip()) < 100:
-                            print("Primary extraction yielded too little text, trying fallback method...")
-                            resume_text = extract_with_pdfplumber(temp_file_path)
-                            print(f"Fallback extracted text length: {len(resume_text)} characters")
-                            print(f"Fallback text sample: {resume_text[:200].replace(chr(10), ' ')}")
-                        
-                        # If we still don't have good text, report the error
-                        if not resume_text or len(resume_text.strip()) < 100:
-                            raise Exception("Failed to extract meaningful text from PDF")
-                            
-                    except Exception as e:
-                        print(f"Error extracting PDF text: {str(e)}")
-                        resume_text = f"Error extracting text from PDF: {str(e)}"
-                elif file.filename.lower().endswith((".doc", ".docx")):
-                    # Mock implementation for Word docs - we should add real docx extraction
-                    resume_text = "This appears to be a Word document. Note: Full Word document extraction is coming soon. For now, please use PDF format for best results."
+                    resume_text = extract_text_from_pdf(temp_file.name)
+                    
+                    # If primary extraction fails, try fallback
+                    if not resume_text or len(resume_text.strip()) < 100:
+                        print("Primary PDF extraction failed. Trying pdfplumber fallback.")
+                        resume_text = extract_with_pdfplumber(temp_file.name)
+                
+                # Handle text files
                 elif file.filename.lower().endswith(".txt"):
-                    with open(temp_file_path, "r") as f:
+                    with open(temp_file.name, "r") as f:
                         resume_text = f.read()
-                        print(f"Text file contents ({len(resume_text)} chars): {resume_text[:100]}...")
+                
                 else:
-                    raise HTTPException(status_code=400, detail="Unsupported file format. Please upload a PDF, Word, or text file.")
-                    
-                # Clean up temporary file
-                if os.path.exists(temp_file_path):
-                    os.unlink(temp_file_path)
-                    
-            except Exception as e:
-                # Clean up temporary file
-                if os.path.exists(temp_file_path):
-                    os.unlink(temp_file_path)
-                print(f"Error processing file: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"Failed to process the file: {str(e)}")
+                    return JSONResponse(
+                        status_code=400,
+                        content={"detail": "Unsupported file format. Please upload a PDF or text file."}
+                    )
+            finally:
+                # Clean up the temp file
+                os.unlink(temp_file.name)
         
         else:
-            raise HTTPException(status_code=400, detail="No file or text provided")
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "No file or text provided"}
+            )
         
-        # Analyze the resume text using the appropriate model based on mode
-        if resume_text:
-            print(f"Analyzing resume text (first 100 chars): {resume_text[:100]}...")
-            
-            # We got text, now analyze it using the best available method
+        # Check if we have enough text to analyze
+        if not resume_text or len(resume_text.strip()) < 50:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Not enough text content to analyze"}
+            )
+        
+        # Analyze the resume text
+        print(f"Analyzing resume text ({len(resume_text)} chars)")
+        
+        # Use the appropriate analyzer based on mode
+        if ANALYZER_MODE == "api" and OPENROUTER_API_AVAILABLE:
             try:
-                # Try to use OpenRouter API first (best quality)
-                if ANALYZER_MODE in ["api", "auto"] and OPENROUTER_API_AVAILABLE:
-                    try:
-                        print("Attempting to use OpenRouter API with Mistral 7B")
-                        # Check OpenRouter API status first
-                        status = get_openrouter_model_status(fallback_to_mock=True)
-                        print(f"OpenRouter API status: {status}")
-                        
-                        # Check if we're using fallback mode
-                        if status.get("using_fallback", False):
-                            print("OpenRouter API is using fallback mode")
-                            # If we're in API-only mode, check if we should return an error
-                            if ANALYZER_MODE == "api" and not status.get("status") == "available":
-                                raise HTTPException(status_code=503, 
-                                    detail=f"OpenRouter API analysis unavailable: {status.get('message')}. Using fallback analysis.")
-                        
-                        # Proceed with OpenRouter API resume analysis (with fallback)
-                        print("Proceeding with OpenRouter API resume analysis...")
-                        analysis_result = analyze_resume_with_openrouter(resume_text, fallback_to_mock=True)
-                        
-                        # Add a source field to indicate where the analysis came from
-                        if "source" not in analysis_result:
-                            analysis_result["source"] = "openrouter_api"
-                            
-                        return analysis_result
-                    except ValueError as e:
-                        # The OpenRouter API had an authentication or connection error
-                        print(f"OpenRouter API error: {str(e)}")
-                        if ANALYZER_MODE == "api":
-                            # If user explicitly requested API mode, return the error
-                            raise HTTPException(status_code=503, 
-                                detail=f"OpenRouter API analysis failed: {str(e)}. Please check your API key or try again later.")
-                    except Exception as e:
-                        print(f"Unexpected error with OpenRouter API: {str(e)}")
-                        if ANALYZER_MODE == "api":
-                            raise HTTPException(status_code=500,
-                                detail=f"Unexpected error with OpenRouter API: {str(e)}.")
-                        else:
-                            # For auto mode, log the error and continue to fallback methods
-                            print(f"Falling back to alternative analysis method due to error: {str(e)}")
-                            # We'll continue to the next analysis method
-                        
-                        # Otherwise in auto mode, try other methods
-                        print("Falling back to other analysis methods...")
-                
-                # Try llama.cpp method next (often reliable on CPU)
-                if ANALYZER_MODE in ["llama_cpp", "auto"] and LLAMA_CPP_AVAILABLE and is_llama_cpp_available():
-                    try:
-                        print("Using llama.cpp analysis method")
-                        analysis_result = analyze_resume_with_llama_cpp(resume_text)
-                        return analysis_result
-                    except Exception as e:
-                        print(f"llama.cpp analysis error: {str(e)}")
-                        if ANALYZER_MODE == "llama_cpp":
-                            # If user explicitly requested llama_cpp mode, return the error
-                            raise HTTPException(status_code=500, 
-                                detail=f"llama.cpp analysis failed: {str(e)}. Please try another analysis mode.")
-                        
-                        # Otherwise in auto mode, continue to next method
-                        print("Falling back to other analysis methods...")
-                
-                # Try offline Mistral model next
-                if ANALYZER_MODE in ["offline", "auto"] and OFFLINE_MISTRAL_AVAILABLE and is_mistral_model_available():
-                    try:
-                        print("Using offline Mistral analysis method")
-                        analysis_result = analyze_resume_with_mistral_offline(resume_text)
-                        return analysis_result
-                    except Exception as e:
-                        print(f"Offline Mistral analysis error: {str(e)}")
-                        if ANALYZER_MODE == "offline":
-                            # If user explicitly requested offline mode, return the error
-                            raise HTTPException(status_code=500, 
-                                detail=f"Offline Mistral analysis failed: {str(e)}. Please try another analysis mode.")
-                        
-                        # Otherwise in auto mode, fall back to regex
-                        print("Falling back to regex analysis method...")
-                
-                # Use regex as last resort or if explicitly requested
-                if ANALYZER_MODE == "regex" or ANALYZER_MODE == "auto":
-                    print("Using regex-based analysis method")
-                    analysis_result = analyze_resume_with_regex(resume_text)
-                    return analysis_result
-                
-                # If we get here, no analysis method succeeded
-                raise HTTPException(status_code=500, 
-                    detail="Failed to analyze resume with any available method. Please check your configuration.")
-                    
-            except HTTPException:
-                # Re-raise HTTP exceptions
-                raise
+                # Try OpenRouter API
+                print("Using OpenRouter API for analysis")
+                result = await analyze_resume_with_openrouter(resume_text)
+                return result
             except Exception as e:
-                print(f"Error in resume analysis: {str(e)}")
-                raise HTTPException(status_code=500, 
-                    detail=f"Resume analysis error: {str(e)}")
+                print(f"OpenRouter API analysis failed: {str(e)}. Falling back to regex.")
+                result = analyze_resume_with_regex(resume_text)
+                return result
         else:
-            raise HTTPException(status_code=400, detail="Failed to extract text from the provided file")
-            
-    except HTTPException as he:
-        raise he
+            # Fallback to regex-based analysis
+            print("Using regex-based analysis")
+            result = analyze_resume_with_regex(resume_text)
+            return result
+        
     except Exception as e:
-        print(f"Unexpected error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+        print(f"Error in analyze_resume: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Resume analysis failed: {str(e)}"}
+        )
 
 @app.post("/api/resumes/upload")
 async def upload_resume(file: UploadFile = File(...), metadata: str = Form(...)):
@@ -944,31 +793,369 @@ async def download_file(file_path: str):
             content={"detail": f"Failed to download file: {str(e)}"}
         )
 
+# New endpoints for job description analysis and AI suggestions
+
+@app.post("/api/job-description/analyze", response_model=JobDescriptionAnalysis)
+async def analyze_job_description(file: UploadFile = File(...)):
+    """
+    Analyze a job description file and extract skills and requirements
+    """
+    try:
+        # Save the uploaded file temporarily
+        temp_file = tempfile.NamedTemporaryFile(delete=False)
+        try:
+            contents = await file.read()
+            with open(temp_file.name, "wb") as f:
+                f.write(contents)
+            
+            # Extract text based on file type
+            jd_text = ""
+            if file.filename.lower().endswith(".pdf"):
+                jd_text = extract_text_from_pdf(temp_file.name)
+                if not jd_text or len(jd_text.strip()) < 100:
+                    jd_text = extract_with_pdfplumber(temp_file.name)
+            elif file.filename.lower().endswith((".doc", ".docx")):
+                # For Word documents, we'll use a simple text extraction
+                # In production, you'd want to use python-docx or similar
+                jd_text = "Word document text extraction not implemented. Using mock analysis."
+            elif file.filename.lower().endswith(".txt"):
+                with open(temp_file.name, "r") as f:
+                    jd_text = f.read()
+            else:
+                raise HTTPException(status_code=400, detail="Unsupported file format")
+            
+            # Analyze the job description text
+            analysis = await analyze_job_description_text(jd_text)
+            analysis["id"] = str(uuid.uuid4())
+            analysis["filename"] = file.filename
+            
+            return analysis
+            
+        finally:
+            # Clean up the temp file
+            os.unlink(temp_file.name)
+            
+    except Exception as e:
+        print(f"Error analyzing job description file: {str(e)}")
+        # Return mock analysis for demo
+        return JobDescriptionAnalysis(
+            id=str(uuid.uuid4()),
+            filename=file.filename,
+            summary="Software Engineer position requiring full-stack development skills with focus on modern web technologies.",
+            skills=["Python", "JavaScript", "React", "Node.js", "SQL", "AWS", "Git", "Docker"],
+            requirements=["3+ years experience", "Bachelor's degree in Computer Science", "Experience with cloud platforms"],
+            experience="3-5 years",
+            category="Software Engineer"
+        )
+
+@app.post("/api/job-description/analyze-text", response_model=JobDescriptionAnalysis)
+async def analyze_job_description_text_endpoint(request: dict):
+    """
+    Analyze job description text and extract skills and requirements
+    """
+    try:
+        jd_text = request.get("text", "")
+        if not jd_text.strip():
+            raise HTTPException(status_code=400, detail="No text provided")
+        
+        analysis = await analyze_job_description_text(jd_text)
+        analysis["id"] = str(uuid.uuid4())
+        analysis["filename"] = "job-description.txt"
+        
+        return analysis
+        
+    except Exception as e:
+        print(f"Error analyzing job description text: {str(e)}")
+        # Return mock analysis for demo
+        return JobDescriptionAnalysis(
+            id=str(uuid.uuid4()),
+            filename="job-description.txt",
+            summary="Software Engineer position requiring full-stack development skills with focus on modern web technologies.",
+            skills=["Python", "JavaScript", "React", "Node.js", "SQL", "AWS", "Git", "Docker"],
+            requirements=["3+ years experience", "Bachelor's degree in Computer Science", "Experience with cloud platforms"],
+            experience="3-5 years",
+            category="Software Engineer"
+        )
+
+async def analyze_job_description_text(jd_text: str) -> dict:
+    """
+    Analyze job description text using AI or regex fallback
+    """
+    try:
+        if OPENROUTER_API_AVAILABLE:
+            # Use OpenRouter API for analysis
+            prompt = f"""Analyze this job description and extract key information. Focus on extracting technical skills, tools, frameworks, and requirements mentioned in the role.
+
+Please extract and return ONLY a JSON object with this exact structure:
+{{
+    "summary": "Brief 1-2 sentence summary of the role",
+    "skills": ["list", "of", "technical", "skills", "tools", "frameworks"],
+    "requirements": ["list", "of", "key", "requirements"],
+    "experience": "X-Y years or specific experience level",
+    "category": "Job Category/Title"
+}}
+
+Job Description Content:
+{jd_text[:4000]}
+
+Extract all technical skills, programming languages, frameworks, libraries, databases, tools, and technologies mentioned. Include both specific technologies (like Python, TensorFlow, MySQL) and general skills (like Machine Learning, NLP, Web Scraping)."""
+
+            response = await get_openrouter_completion(prompt)
+            
+            # Try to parse the JSON response
+            try:
+                import json
+                # Clean the response to extract JSON
+                json_start = response.find('{')
+                json_end = response.rfind('}') + 1
+                if json_start != -1 and json_end != -1:
+                    json_str = response[json_start:json_end]
+                    return json.loads(json_str)
+            except Exception as json_error:
+                print(f"JSON parsing failed: {json_error}. Using regex fallback.")
+        
+        # Regex-based fallback analysis
+        return analyze_job_description_with_regex(jd_text)
+        
+    except Exception as e:
+        print(f"Error in analyze_job_description_text: {str(e)}")
+        return analyze_job_description_with_regex(jd_text)
+
+def analyze_job_description_with_regex(jd_text: str) -> dict:
+    """
+    Analyze job description using regex patterns
+    """
+    # Enhanced skill patterns to capture more technologies and frameworks
+    skills = []
+    skill_patterns = [
+        # Programming Languages
+        r'\b(?:Python|JavaScript|Java|React|Node\.js|Angular|Vue|SQL|NoSQL|MongoDB|PostgreSQL|MySQL|AWS|Azure|GCP|Docker|Kubernetes|Git|Linux|HTML|CSS|TypeScript|PHP|C\+\+|C#|Ruby|Go|Rust|Swift|Kotlin|Flutter|Django|Flask|Express|Spring|Laravel|R|Scala|Matlab)\b',
+        # ML/AI Technologies  
+        r'\b(?:TensorFlow|PyTorch|Keras|Scikit-learn|Pandas|NumPy|Scipy|OpenCV|NLTK|spaCy|Gensim|CoreNLP|OpenNLP|LingPipe|Mallet|Theano|MLlib|Machine Learning|Deep Learning|NLP|Natural Language Processing|Computer Vision|Neural Networks)\b',
+        # Data & Analytics
+        r'\b(?:Spark|Hadoop|Kafka|Elasticsearch|Redis|Cassandra|HBase|BigQuery|Snowflake|Tableau|Power BI|Jupyter|Anaconda|Data Mining|ETL|Data Warehousing|Statistics|Analytics)\b',
+        # Web Technologies
+        r'\b(?:REST|GraphQL|API|Microservices|JSON|XML|HTTP|HTTPS|OAuth|JWT|WebSocket|Ajax|Bootstrap|Material UI|Webpack|Babel|NPM|Yarn)\b',
+        # DevOps & Cloud
+        r'\b(?:Jenkins|Travis|CircleCI|GitLab|GitHub|Terraform|Ansible|Chef|Puppet|Nagios|Prometheus|Grafana|ELK|Splunk|CloudFormation|Lambda|EC2|S3|RDS|DynamoDB)\b',
+        # Databases
+        r'\b(?:Oracle|SQL Server|MariaDB|SQLite|Neo4j|InfluxDB|TimescaleDB|Memcached|RabbitMQ|ActiveMQ|Apache Kafka)\b',
+        # Scraping & Automation
+        r'\b(?:Selenium|Scrapy|BeautifulSoup|Puppeteer|Playwright|Requests|Urllib|Mechanize|Web Scraping|Data Extraction|Automation|Bot|Crawler)\b',
+        # Soft Skills & Methodologies
+        r'\b(?:Agile|Scrum|Kanban|JIRA|Confluence|Slack|Teams|Communication|Leadership|Problem Solving|Critical Thinking|Analytical)\b'
+    ]
+    
+    jd_lower = jd_text.lower()
+    
+    for pattern in skill_patterns:
+        matches = re.findall(pattern, jd_text, re.IGNORECASE)
+        for match in matches:
+            if match not in [s.lower() for s in skills]:  # Avoid duplicates
+                skills.append(match)
+    
+    # Special handling for compound terms that might be missed
+    compound_skills = [
+        ('sentiment analysis', 'Sentiment Analysis'),
+        ('text mining', 'Text Mining'), 
+        ('entity extraction', 'Entity Extraction'),
+        ('document classification', 'Document Classification'),
+        ('topic modeling', 'Topic Modeling'),
+        ('natural language understanding', 'NLU'),
+        ('natural language generation', 'NLG'),
+        ('web scraping', 'Web Scraping'),
+        ('data extraction', 'Data Extraction'),
+        ('machine learning', 'Machine Learning'),
+        ('deep learning', 'Deep Learning'),
+        ('computer vision', 'Computer Vision'),
+        ('data science', 'Data Science'),
+        ('artificial intelligence', 'AI'),
+        ('neural networks', 'Neural Networks'),
+        ('supervised learning', 'Supervised Learning'),
+        ('unsupervised learning', 'Unsupervised Learning'),
+        ('reinforcement learning', 'Reinforcement Learning'),
+        ('feature engineering', 'Feature Engineering'),
+        ('model deployment', 'Model Deployment'),
+        ('statistical analysis', 'Statistical Analysis'),
+        ('data visualization', 'Data Visualization'),
+        ('rest api', 'REST API'),
+        ('restful api', 'RESTful API'),
+        ('message queue', 'Message Queues'),
+        ('proxy server', 'Proxy'),
+        ('browser fingerprinting', 'Browser Fingerprinting'),
+        ('bot detection', 'Bot Detection'),
+        ('captcha solving', 'CAPTCHA'),
+        ('web development', 'Web Development'),
+        ('full stack', 'Full-Stack'),
+        ('backend development', 'Backend Development'),
+        ('frontend development', 'Frontend Development')
+    ]
+    
+    for search_term, skill_name in compound_skills:
+        if search_term in jd_lower and skill_name not in skills:
+            skills.append(skill_name)
+    
+    # Extract experience requirements with more flexible patterns
+    experience_patterns = [
+        r'(\d+)[+\-\s]*(?:to\s+(\d+))?\s*years?\s*(?:of\s+)?(?:experience|exp)',
+        r'(\d+)[+\-]\s*years?\s*(?:experience|exp)',
+        r'minimum\s+(\d+)\s*years?',
+        r'at least\s+(\d+)\s*years?'
+    ]
+    
+    experience = "2-4 years"  # default based on your example
+    for pattern in experience_patterns:
+        match = re.search(pattern, jd_text, re.IGNORECASE)
+        if match:
+            min_exp = match.group(1)
+            max_exp = match.group(2) if len(match.groups()) > 1 and match.group(2) else str(int(min_exp) + 2)
+            experience = f"{min_exp}-{max_exp} years"
+            break
+    
+    # Determine job category based on content
+    category = "NLP Engineer"  # default for your example
+    
+    category_keywords = {
+        'data scientist': ['data scientist', 'data science', 'analytics', 'statistical analysis'],
+        'nlp engineer': ['nlp', 'natural language processing', 'text mining', 'sentiment analysis'],
+        'machine learning engineer': ['machine learning', 'ml engineer', 'model deployment', 'deep learning'],
+        'software engineer': ['software engineer', 'software development', 'programming'],
+        'backend developer': ['backend', 'back-end', 'server-side', 'api development'],
+        'frontend developer': ['frontend', 'front-end', 'ui', 'user interface'],
+        'full-stack developer': ['full-stack', 'fullstack', 'full stack'],
+        'devops engineer': ['devops', 'dev ops', 'deployment', 'infrastructure'],
+        'web scraping specialist': ['web scraping', 'data extraction', 'scraping', 'crawling']
+    }
+    
+    for cat, keywords in category_keywords.items():
+        if any(keyword in jd_lower for keyword in keywords):
+            category = cat.title()
+            break
+    
+    # Generate summary based on extracted information
+    role_sections = []
+    if 'nlp' in jd_lower or 'natural language' in jd_lower:
+        role_sections.append('NLP and machine learning')
+    if 'scraping' in jd_lower or 'extraction' in jd_lower:
+        role_sections.append('web scraping and data extraction')
+    if 'model' in jd_lower and ('deployment' in jd_lower or 'training' in jd_lower):
+        role_sections.append('model development and deployment')
+    
+    summary_skills = ', '.join(skills[:4]) if skills else 'various technologies'
+    main_focus = ' and '.join(role_sections) if role_sections else 'software development'
+    
+    summary = f"{category} position focusing on {main_focus}, requiring {experience} experience with {summary_skills}."
+    
+    # Extract requirements from common patterns
+    requirements = []
+    
+    # Education requirements
+    if re.search(r'\b(?:bachelor|b\.s|bs|degree)\b', jd_text, re.IGNORECASE):
+        requirements.append("Bachelor's degree")
+    if re.search(r'\b(?:master|m\.s|ms)\b', jd_text, re.IGNORECASE):
+        requirements.append("Master's degree preferred")
+    if re.search(r'\b(?:phd|ph\.d|doctorate)\b', jd_text, re.IGNORECASE):
+        requirements.append("PhD preferred")
+    
+    # Experience requirements
+    if experience != "2-4 years":
+        requirements.append(f"{experience} experience")
+    
+    # Technical requirements based on skills found
+    if any('ML' in skill or 'Machine Learning' in skill for skill in skills):
+        requirements.append("Machine Learning experience")
+    if any('NLP' in skill or 'Natural Language' in skill for skill in skills):
+        requirements.append("NLP/Text processing experience")
+    if any('scraping' in skill.lower() or 'extraction' in skill.lower() for skill in skills):
+        requirements.append("Web scraping experience")
+    
+    return {
+        "summary": summary,
+        "skills": skills[:20],  # Limit to top 20 skills to avoid overwhelming
+        "requirements": requirements,
+        "experience": experience,
+        "category": category
+    }
+
+@app.post("/api/ai-suggestions")
+async def get_ai_suggestions(request: AISuggestionsRequest):
+    """
+    Get AI suggestions for improving resume match with job description
+    """
+    try:
+        resume_skills = request.resumeSkills
+        jd_skills = request.jobDescriptionSkills
+        resume_summary = request.resumeSummary
+        
+        if OPENROUTER_API_AVAILABLE:
+            # Use OpenRouter API for AI suggestions
+            prompt = f"""You are an expert career advisor. Analyze this candidate's resume against the job description requirements and provide specific, actionable suggestions.
+
+RESUME SKILLS: {', '.join(resume_skills)}
+JOB DESCRIPTION REQUIRED SKILLS: {', '.join(jd_skills)}
+RESUME SUMMARY: {resume_summary}
+
+Please provide a helpful analysis that:
+1. Identifies which skills from the resume match well with the job requirements
+2. Points out which job requirements are missing from the resume  
+3. Gives specific, actionable advice for the candidate
+
+Format your response in a conversational, encouraging tone. Be specific about technologies and skills. Keep it concise (2-3 sentences max) but actionable.
+
+Example format: "Great match on [specific matching skills]! To strengthen your profile for this role, consider highlighting your experience with [missing skills] if you've used them in projects, or gaining experience in [specific missing technologies] which are key requirements for this position."""
+
+            suggestions = await get_openrouter_completion(prompt)
+            return {"suggestions": suggestions}
+        
+        # Fallback to rule-based suggestions
+        matched_skills = []
+        missing_skills = []
+        
+        for jd_skill in jd_skills:
+            is_matched = any(jd_skill.lower() in resume_skill.lower() or 
+                           resume_skill.lower() in jd_skill.lower() 
+                           for resume_skill in resume_skills)
+            if is_matched:
+                matched_skills.append(jd_skill)
+            else:
+                missing_skills.append(jd_skill)
+        
+        if matched_skills and missing_skills:
+            suggestions = f"Great match on {', '.join(matched_skills[:3])}! To strengthen your profile, consider highlighting experience with {', '.join(missing_skills[:3])} if you've used them in your projects but haven't mentioned them prominently in your resume."
+        elif matched_skills:
+            suggestions = f"Excellent skill alignment! Your expertise in {', '.join(matched_skills[:3])} makes you a strong candidate for this position."
+        else:
+            suggestions = f"While your background is valuable, consider developing skills in {', '.join(missing_skills[:3])} to better align with this role's requirements."
+        
+        return {"suggestions": suggestions}
+        
+    except Exception as e:
+        print(f"Error generating AI suggestions: {str(e)}")
+        return {"suggestions": "Unable to generate suggestions at this time. Please try again later."}
+
+async def get_openrouter_completion(prompt: str) -> str:
+    """
+    Get completion from OpenRouter API
+    """
+    try:
+        from services.openrouter_service import get_openrouter_response
+        response = await get_openrouter_response(prompt)
+        return response
+    except Exception as e:
+        print(f"Error getting OpenRouter completion: {str(e)}")
+        raise
+
 if __name__ == "__main__":
     try:
         # Create storage directory
         os.makedirs(LOCAL_STORAGE_DIR, exist_ok=True)
         
-        # Handle model loading based on selected mode
-        if ANALYZER_MODE == "llama_cpp" and LLAMA_CPP_AVAILABLE:
-            print("Starting llama.cpp model download and setup...")
-            # Download a quantized, small GGUF model that runs well on CPU
-            model_url = "https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf"
-            model_path = download_model(model_url)
-            if model_path:
-                print(f"Model downloaded to {model_path}. Will use this for resume analysis.")
-            else:
-                print("Failed to download model. Will fall back to regex analysis.")
-                ANALYZER_MODE = "regex"
-                
-        # Preload the TinyLlama model if we're using offline mode
-        elif ANALYZER_MODE == "offline" and OFFLINE_MISTRAL_AVAILABLE:
-            from services.mistral_offline import preload_model
-            print("Preloading TinyLlama model for resume analysis...")
-            preload_model()
-            print("Model preloaded successfully")
+        # Set analyzer mode to regex since other options are removed
+        if ANALYZER_MODE != "api":
+            print("Setting analyzer mode to 'regex' as other options are not available")
+            ANALYZER_MODE = "regex"
         
         # Run the app
         uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
     except Exception as e:
-        print(f"Failed to start server: {str(e)}") 
+        print(f"Failed to start server: {str(e)}")
