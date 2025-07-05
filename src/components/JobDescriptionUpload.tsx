@@ -5,6 +5,7 @@ import { Upload, FileText, Loader2, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { API_BASE_URL } from "@/config/api";
 
 interface JobDescription {
   id: string;
@@ -51,7 +52,7 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/job-description/analyze', {
+      const response = await fetch(`${API_BASE_URL}/api/job-description/analyze`, {
         method: 'POST',
         body: formData,
       });
@@ -70,22 +71,10 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
     } catch (error) {
       console.error('Error analyzing job description:', error);
       
-      // Fallback to mock analysis for demo
-      const mockJD: JobDescription = {
-        id: Date.now().toString(),
-        filename: file.name,
-        summary: "Software Engineer position requiring full-stack development skills with focus on modern web technologies.",
-        skills: ["Python", "JavaScript", "React", "Node.js", "SQL", "AWS", "Git", "Docker"],
-        requirements: ["3+ years experience", "Bachelor's degree in Computer Science", "Experience with cloud platforms"],
-        experience: "3-5 years",
-        category: "Software Engineer"
-      };
-      
-      onJobDescriptionAnalyzed(mockJD);
-      
       toast({
-        title: "Job Description Analyzed (Demo)",
-        description: "Using demo data - backend analysis not available.",
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: "Failed to analyze job description. Please try again.",
       });
     } finally {
       setIsUploading(false);
@@ -106,7 +95,7 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
     setIsAnalyzing(true);
 
     try {
-      const response = await fetch('/api/job-description/analyze-text', {
+      const response = await fetch(`${API_BASE_URL}/api/job-description/analyze-text`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,22 +117,10 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
     } catch (error) {
       console.error('Error analyzing job description text:', error);
       
-      // Fallback to mock analysis for demo
-      const mockJD: JobDescription = {
-        id: Date.now().toString(),
-        filename: "job-description.txt",
-        summary: "Software Engineer position requiring full-stack development skills with focus on modern web technologies.",
-        skills: ["Python", "JavaScript", "React", "Node.js", "SQL", "AWS", "Git", "Docker"],
-        requirements: ["3+ years experience", "Bachelor's degree in Computer Science", "Experience with cloud platforms"],
-        experience: "3-5 years",
-        category: "Software Engineer"
-      };
-      
-      onJobDescriptionAnalyzed(mockJD);
-      
       toast({
-        title: "Job Description Analyzed (Demo)",
-        description: "Using demo data - backend analysis not available.",
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: "Failed to analyze job description text. Please try again.",
       });
     } finally {
       setIsAnalyzing(false);

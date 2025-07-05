@@ -117,8 +117,8 @@ Format your response as a valid JSON object with these five keys. DO NOT include
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://resumatcher.netlify.app",  # Add a referer to help with API tracking
-        "X-Title": "ResuMatch"  # Add a title to identify your application
+        "HTTP-Referer": "https://resumatcher.netlify.app",  # Your deployed frontend URL
+        "X-Title": "ResuMatch - AI Resume Analysis"  # Add a title to identify your application
     }
     
     # Log the headers for debugging (safely)
@@ -532,8 +532,8 @@ Output only a JSON object with "score" (integer) and "reason" (string) keys."""}
             OPENROUTER_CHAT_COMPLETIONS_API_URL,
             headers={
                 "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "HTTP-Referer": "https://github.com/theagentvikram/ResuMatch",
-                "X-Title": "ResuMatch",
+                "HTTP-Referer": "https://resumatcher.netlify.app",
+                "X-Title": "ResuMatch - AI Resume Analysis",
                 "Content-Type": "application/json"
             },
             json={
@@ -590,8 +590,8 @@ async def get_openrouter_response(prompt: str) -> str:
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://resumatch.ai",
-        "X-Title": "ResuMatch AI Resume Analysis"
+        "HTTP-Referer": "https://resumatcher.netlify.app",
+        "X-Title": "ResuMatch - AI Resume Analysis"
     }
     
     data = {

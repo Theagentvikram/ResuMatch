@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Resume } from "@/types";
+import { API_BASE_URL } from "@/config/api";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ResumeResultsProps {
@@ -36,7 +37,7 @@ export function ResumeResults({ jobDescriptionSkills = [] }: ResumeResultsProps)
     setLoadingAI(prev => ({ ...prev, [resumeId]: true }));
 
     try {
-      const response = await fetch('/api/ai-suggestions', {
+      const response = await fetch(`${API_BASE_URL}/api/ai-suggestions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,6 +78,56 @@ export function ResumeResults({ jobDescriptionSkills = [] }: ResumeResultsProps)
       });
     } finally {
       setLoadingAI(prev => ({ ...prev, [resumeId]: false }));
+    }
+  };
+
+  // Download resume function
+  const downloadResume = async (resume: Resume) => {
+    try {
+      toast({
+        title: "Download Starting",
+        description: `Downloading ${resume.filename}...`,
+      });
+
+      const response = await fetch(`${API_BASE_URL}/api/resumes/download/${resume.id}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+
+      // Get the file blob
+      const blob = await response.blob();
+      
+      // Create a download URL
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = resume.filename || resume.name || 'resume.pdf';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download Complete",
+        description: `${resume.filename} has been downloaded successfully.`,
+      });
+    } catch (error) {
+      console.error('Error downloading resume:', error);
+      toast({
+        variant: "destructive",
+        title: "Download Failed",
+        description: "Failed to download resume. Please try again.",
+      });
     }
   };
 
@@ -233,7 +284,11 @@ export function ResumeResults({ jobDescriptionSkills = [] }: ResumeResultsProps)
                       </>
                     )}
                   </Button>
-                  <Button size="sm" className="gap-1">
+                  <Button 
+                    size="sm" 
+                    className="gap-1"
+                    onClick={() => downloadResume(result.resume)}
+                  >
                     <Download className="h-4 w-4" /> Resume
                   </Button>
                 </div>
@@ -290,7 +345,7 @@ export function ResumeResults({ jobDescriptionSkills = [] }: ResumeResultsProps)
               </div>
               
               <div className="pt-2 flex justify-end">
-                <Button>
+                <Button onClick={() => selectedResume && downloadResume(selectedResume)}>
                   <Download className="h-4 w-4 mr-2" /> Download Resume
                 </Button>
               </div>

@@ -552,43 +552,61 @@ async def search_resume(search_query: SearchQuery):
     try:
         print(f"Received search query: {search_query.query}, search_type: {search_query.search_type}")
         
-        # If no results or no user resumes, return mock data
+        # If no results or no user resumes, return mock data in SearchResult format
         mock_results_data = [
             {
-                "id": str(uuid.uuid4()),
-                "filename": "candidate1.pdf",
-                "upload_date": datetime.now().isoformat(),
-                "match_score": 92,
-                "match_reason": "Strong match on Python, JavaScript skills and experience level (Mock Data)",
-                "summary": "Software engineer with 6 years of experience in Python and JavaScript.",
-                "skills": ["Python", "JavaScript", "React", "Django", "AWS"],
-                "experience": "6",
-                "educationLevel": "Master's",
-                "category": "Software Engineer"
+                "resume": {
+                    "id": str(uuid.uuid4()),
+                    "filename": "candidate1.pdf",
+                    "name": "candidate1.pdf",
+                    "originalName": "candidate1.pdf",
+                    "uploadDate": datetime.now().isoformat(),
+                    "summary": "Software engineer with 6 years of experience in Python and JavaScript.",
+                    "skills": ["Python", "JavaScript", "React", "Django", "AWS"],
+                    "experience": 6,
+                    "educationLevel": "Master's",
+                    "category": "Software Engineer",
+                    "status": "processed"
+                },
+                "matchScore": 92,
+                "matchReason": "Strong match on Python, JavaScript skills and experience level (Mock Data)",
+                "scoreSource": "mock_data"
             },
             {
-                "id": str(uuid.uuid4()),
-                "filename": "candidate2.pdf",
-                "upload_date": datetime.now().isoformat(),
-                "match_score": 85,
-                "match_reason": "Good match on frontend skills and web development experience (Mock Data)",
-                "summary": "Front-end developer with 4 years of experience creating responsive web applications.",
-                "skills": ["JavaScript", "React", "CSS", "HTML", "TypeScript"],
-                "experience": "4",
-                "educationLevel": "Bachelor's",
-                "category": "Front-end Developer"
+                "resume": {
+                    "id": str(uuid.uuid4()),
+                    "filename": "candidate2.pdf",
+                    "name": "candidate2.pdf",
+                    "originalName": "candidate2.pdf",
+                    "uploadDate": datetime.now().isoformat(),
+                    "summary": "Front-end developer with 4 years of experience creating responsive web applications.",
+                    "skills": ["JavaScript", "React", "CSS", "HTML", "TypeScript"],
+                    "experience": 4,
+                    "educationLevel": "Bachelor's",
+                    "category": "Front-end Developer",
+                    "status": "processed"
+                },
+                "matchScore": 85,
+                "matchReason": "Good match on frontend skills and web development experience (Mock Data)",
+                "scoreSource": "mock_data"
             },
             {
-                "id": str(uuid.uuid4()),
-                "filename": "candidate3.pdf",
-                "upload_date": datetime.now().isoformat(),
-                "match_score": 78,
-                "match_reason": "Matches on full-stack development and cloud experience (Mock Data)",
-                "summary": "Full-stack developer with expertise in MERN stack and cloud services.",
-                "skills": ["MongoDB", "Express", "React", "Node.js", "AWS"],
-                "experience": "3",
-                "educationLevel": "Bachelor's",
-                "category": "Full-stack Developer"
+                "resume": {
+                    "id": str(uuid.uuid4()),
+                    "filename": "candidate3.pdf",
+                    "name": "candidate3.pdf",
+                    "originalName": "candidate3.pdf",
+                    "uploadDate": datetime.now().isoformat(),
+                    "summary": "Full-stack developer with expertise in MERN stack and cloud services.",
+                    "skills": ["MongoDB", "Express", "React", "Node.js", "AWS"],
+                    "experience": 3,
+                    "educationLevel": "Bachelor's",
+                    "category": "Full-stack Developer",
+                    "status": "processed"
+                },
+                "matchScore": 78,
+                "matchReason": "Matches on full-stack development and cloud experience (Mock Data)",
+                "scoreSource": "mock_data"
             }
         ]
         
@@ -640,14 +658,17 @@ async def search_resume(search_query: SearchQuery):
                     score_result = calculate_keyword_match_score(search_query.query, resume)
                     score_result["source"] = "keyword_matching"
 
-                result = resume.copy()
-                result["match_score"] = score_result["score"]
-                result["match_reason"] = score_result["reason"]
-                result["score_source"] = score_result["source"]
-                results.append(result)
+                # Format result as SearchResult structure
+                search_result = {
+                    "resume": resume,
+                    "matchScore": score_result["score"],
+                    "matchReason": score_result["reason"],
+                    "scoreSource": score_result["source"]
+                }
+                results.append(search_result)
             
             # Sort by match score
-            results.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+            results.sort(key=lambda x: x.get("matchScore", 0), reverse=True)
             
             if results:
                 print(f"Found {len(results)} matching resumes using {search_query.search_type} scoring")
@@ -837,16 +858,7 @@ async def analyze_job_description(file: UploadFile = File(...)):
             
     except Exception as e:
         print(f"Error analyzing job description file: {str(e)}")
-        # Return mock analysis for demo
-        return JobDescriptionAnalysis(
-            id=str(uuid.uuid4()),
-            filename=file.filename,
-            summary="Software Engineer position requiring full-stack development skills with focus on modern web technologies.",
-            skills=["Python", "JavaScript", "React", "Node.js", "SQL", "AWS", "Git", "Docker"],
-            requirements=["3+ years experience", "Bachelor's degree in Computer Science", "Experience with cloud platforms"],
-            experience="3-5 years",
-            category="Software Engineer"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to analyze job description: {str(e)}")
 
 @app.post("/api/job-description/analyze-text", response_model=JobDescriptionAnalysis)
 async def analyze_job_description_text_endpoint(request: dict):
@@ -866,55 +878,72 @@ async def analyze_job_description_text_endpoint(request: dict):
         
     except Exception as e:
         print(f"Error analyzing job description text: {str(e)}")
-        # Return mock analysis for demo
-        return JobDescriptionAnalysis(
-            id=str(uuid.uuid4()),
-            filename="job-description.txt",
-            summary="Software Engineer position requiring full-stack development skills with focus on modern web technologies.",
-            skills=["Python", "JavaScript", "React", "Node.js", "SQL", "AWS", "Git", "Docker"],
-            requirements=["3+ years experience", "Bachelor's degree in Computer Science", "Experience with cloud platforms"],
-            experience="3-5 years",
-            category="Software Engineer"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to analyze job description: {str(e)}")
 
 async def analyze_job_description_text(jd_text: str) -> dict:
     """
     Analyze job description text using AI or regex fallback
     """
     try:
+        print(f"Analyzing job description with {len(jd_text)} characters")
+        
         if OPENROUTER_API_AVAILABLE:
             # Use OpenRouter API for analysis
-            prompt = f"""Analyze this job description and extract key information. Focus on extracting technical skills, tools, frameworks, and requirements mentioned in the role.
+            prompt = f"""You are an expert HR analyst. Analyze this job description and extract key information accurately.
 
-Please extract and return ONLY a JSON object with this exact structure:
+Job Description:
+{jd_text}
+
+Please analyze the above job description and return ONLY a valid JSON object with this exact structure (no additional text):
+
 {{
-    "summary": "Brief 1-2 sentence summary of the role",
-    "skills": ["list", "of", "technical", "skills", "tools", "frameworks"],
-    "requirements": ["list", "of", "key", "requirements"],
-    "experience": "X-Y years or specific experience level",
-    "category": "Job Category/Title"
+    "summary": "Brief 1-2 sentence summary of the role and main responsibilities",
+    "skills": ["list", "of", "all", "technical", "skills", "tools", "frameworks", "mentioned"],
+    "requirements": ["list", "of", "key", "requirements", "and", "qualifications"],
+    "experience": "X-Y years or specific experience requirement mentioned",
+    "category": "Specific job title/category mentioned in the JD"
 }}
 
-Job Description Content:
-{jd_text[:4000]}
+Instructions:
+- Extract ALL technical skills, programming languages, frameworks, libraries, databases, tools mentioned
+- For experience, use the EXACT requirement mentioned (e.g., "2-4 years", "3+ years", "minimum 5 years")
+- For category, use the actual job title from the description
+- Include soft skills and domain-specific skills (like NLP, Machine Learning, etc.)
+- Be thorough and accurate - extract everything mentioned in the job description"""
 
-Extract all technical skills, programming languages, frameworks, libraries, databases, tools, and technologies mentioned. Include both specific technologies (like Python, TensorFlow, MySQL) and general skills (like Machine Learning, NLP, Web Scraping)."""
-
+            print("Making OpenRouter API call for job description analysis...")
             response = await get_openrouter_completion(prompt)
+            print(f"OpenRouter response: {response[:200]}...")
             
             # Try to parse the JSON response
             try:
                 import json
                 # Clean the response to extract JSON
-                json_start = response.find('{')
-                json_end = response.rfind('}') + 1
+                response_cleaned = response.strip()
+                
+                # Find JSON object boundaries
+                json_start = response_cleaned.find('{')
+                json_end = response_cleaned.rfind('}') + 1
+                
                 if json_start != -1 and json_end != -1:
-                    json_str = response[json_start:json_end]
-                    return json.loads(json_str)
+                    json_str = response_cleaned[json_start:json_end]
+                    print(f"Extracted JSON: {json_str[:200]}...")
+                    parsed_result = json.loads(json_str)
+                    
+                    # Validate the structure
+                    required_fields = ["summary", "skills", "requirements", "experience", "category"]
+                    if all(field in parsed_result for field in required_fields):
+                        print("Successfully parsed job description with LLM")
+                        return parsed_result
+                    else:
+                        print(f"Missing required fields in LLM response: {required_fields}")
+                        
             except Exception as json_error:
-                print(f"JSON parsing failed: {json_error}. Using regex fallback.")
+                print(f"JSON parsing failed: {json_error}. Raw response: {response}")
+                print("Falling back to regex analysis...")
         
         # Regex-based fallback analysis
+        print("Using regex-based analysis as fallback")
         return analyze_job_description_with_regex(jd_text)
         
     except Exception as e:
@@ -1089,23 +1118,28 @@ async def get_ai_suggestions(request: AISuggestionsRequest):
         
         if OPENROUTER_API_AVAILABLE:
             # Use OpenRouter API for AI suggestions
-            prompt = f"""You are an expert career advisor. Analyze this candidate's resume against the job description requirements and provide specific, actionable suggestions.
+            prompt = f"""You are a senior hiring manager and resume expert evaluating a candidate for a position. Provide your professional assessment of this candidate based on their resume and the job requirements.
 
-RESUME SKILLS: {', '.join(resume_skills)}
+CANDIDATE'S RESUME SKILLS: {', '.join(resume_skills)}
 JOB DESCRIPTION REQUIRED SKILLS: {', '.join(jd_skills)}
-RESUME SUMMARY: {resume_summary}
+CANDIDATE'S BACKGROUND: {resume_summary}
 
-Please provide a helpful analysis that:
-1. Identifies which skills from the resume match well with the job requirements
-2. Points out which job requirements are missing from the resume  
-3. Gives specific, actionable advice for the candidate
+As a hiring expert, provide your evaluation focusing on:
 
-Format your response in a conversational, encouraging tone. Be specific about technologies and skills. Keep it concise (2-3 sentences max) but actionable.
+1. Why this candidate should be considered for the role (their strengths and matching qualifications)
+2. What concerns or gaps you have about their profile for this specific position
+3. Your overall hiring recommendation and key decision factors
 
-Example format: "Great match on [specific matching skills]! To strengthen your profile for this role, consider highlighting your experience with [missing skills] if you've used them in projects, or gaining experience in [specific missing technologies] which are key requirements for this position."""
+Keep your response to 2-3 sentences maximum. Be direct and professional like a hiring manager would be.
 
+Example format: "Strong candidate due to [specific matching skills/experience]. However, concerns about [specific gaps or weaknesses]. Overall [recommend/cautious/not recommended] based on [key factors]."
+
+Provide only your hiring assessment, no additional formatting or labels."""
+
+            print("Making OpenRouter API call for AI suggestions...")
             suggestions = await get_openrouter_completion(prompt)
-            return {"suggestions": suggestions}
+            print(f"AI suggestions received: {suggestions}")
+            return {"suggestions": suggestions.strip()}
         
         # Fallback to rule-based suggestions
         matched_skills = []
@@ -1121,11 +1155,11 @@ Example format: "Great match on [specific matching skills]! To strengthen your p
                 missing_skills.append(jd_skill)
         
         if matched_skills and missing_skills:
-            suggestions = f"Great match on {', '.join(matched_skills[:3])}! To strengthen your profile, consider highlighting experience with {', '.join(missing_skills[:3])} if you've used them in your projects but haven't mentioned them prominently in your resume."
+            suggestions = f"Strong candidate with relevant experience in {', '.join(matched_skills[:3])}. However, concerns about missing skills in {', '.join(missing_skills[:3])} which are critical for this role. Recommend further evaluation of these gaps."
         elif matched_skills:
-            suggestions = f"Excellent skill alignment! Your expertise in {', '.join(matched_skills[:3])} makes you a strong candidate for this position."
+            suggestions = f"Excellent candidate with strong alignment in {', '.join(matched_skills[:3])}. Skills match well with position requirements. Strongly recommend for interview."
         else:
-            suggestions = f"While your background is valuable, consider developing skills in {', '.join(missing_skills[:3])} to better align with this role's requirements."
+            suggestions = f"Candidate lacks key technical requirements including {', '.join(missing_skills[:3])}. Significant skill gaps for this position. Not recommended without additional training or experience."
         
         return {"suggestions": suggestions}
         

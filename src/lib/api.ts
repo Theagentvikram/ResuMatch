@@ -2,7 +2,7 @@ import { User, Resume, SearchResult } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { mockUsers, mockResumes } from "./mockData";
 import axios from 'axios';
-import { API_ENDPOINTS, getDownloadUrl } from "@/config/api";
+import { API_ENDPOINTS, API_BASE_URL } from "@/config/api";
 
 // Local storage keys
 const TOKEN_KEY = "resumatch_token";
@@ -100,23 +100,48 @@ export const searchResumesApi = async (query: string, searchType: "ai_analysis" 
       
       // Ensure the response data is in the correct format
       if (Array.isArray(response.data)) {
-        return response.data.map(item => ({
-          resume: {
-            id: item.id || uuidv4(),
-            name: item.filename || "Unknown Resume",
-            filename: item.filename || "Unknown Resume",
-            uploadDate: item.upload_date || new Date().toISOString(),
-            status: item.status || "processed",
+        return response.data.map(item => {
+          // If the item already has the correct SearchResult structure
+          if (item.resume && item.matchScore !== undefined) {
+            return {
+              resume: {
+                id: item.resume.id || uuidv4(),
+                name: item.resume.name || item.resume.filename || "Unknown Resume",
+                filename: item.resume.filename || item.resume.name || "Unknown Resume",
+                originalName: item.resume.originalName || item.resume.filename || item.resume.name,
+                uploadDate: item.resume.uploadDate || item.resume.upload_date || new Date().toISOString(),
+                status: item.resume.status || "processed",
+                summary: item.resume.summary || "",
+                skills: item.resume.skills || [],
+                experience: typeof item.resume.experience === 'string' ? parseInt(item.resume.experience) || 0 : (item.resume.experience || 0),
+                educationLevel: item.resume.educationLevel || "",
+                category: item.resume.category || ""
+              },
+              matchScore: item.matchScore || 0,
+              matchReason: item.matchReason || "Matched based on your search criteria",
+              scoreSource: item.scoreSource
+            };
+          }
+          
+          // Legacy format - convert resume object directly
+          return {
+            resume: {
+              id: item.id || uuidv4(),
+              name: item.filename || "Unknown Resume",
+              filename: item.filename || "Unknown Resume",
+              uploadDate: item.upload_date || new Date().toISOString(),
+              status: item.status || "processed",
+              summary: item.summary || "",
+              skills: item.skills || [],
+              experience: typeof item.experience === 'string' ? parseInt(item.experience) || 0 : (item.experience || 0),
+              educationLevel: item.educationLevel || "",
+              category: item.category || ""
+            },
             matchScore: item.match_score || 0,
-            summary: item.summary || "",
-            skills: item.skills || [],
-            experience: typeof item.experience === 'string' ? parseInt(item.experience) || 0 : (item.experience || 0),
-            educationLevel: item.educationLevel || "",
-            category: item.category || ""
-          },
-          matchScore: item.match_score || 0,
-          matchReason: item.match_reason || "Matched based on your search criteria"
-        }));
+            matchReason: item.match_reason || "Matched based on your search criteria",
+            scoreSource: item.score_source
+          };
+        });
       }
       
       return [];
