@@ -140,6 +140,35 @@ os.makedirs(LOCAL_STORAGE_DIR, exist_ok=True)
 USER_RESUMES = storage.load_resumes()
 print(f"Loaded {len(USER_RESUMES)} resumes from persistent storage on startup")
 
+# Job storage - using JSON file storage for now
+JOB_POSTINGS = []
+
+# Load existing job postings if any
+try:
+    job_storage_path = Path("./storage/job_postings.json")
+    if job_storage_path.exists():
+        with open(job_storage_path, 'r') as f:
+            JOB_POSTINGS = json.load(f)
+        print(f"Loaded {len(JOB_POSTINGS)} job postings from storage")
+    else:
+        print("No existing job postings found, starting with empty list")
+except Exception as e:
+    print(f"Error loading job postings: {e}")
+    JOB_POSTINGS = []
+
+# Helper functions for job storage
+def save_job_postings():
+    """Save job postings to persistent storage"""
+    try:
+        job_storage_path = Path("./storage/job_postings.json")
+        job_storage_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(job_storage_path, 'w') as f:
+            json.dump(JOB_POSTINGS, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"Error saving job postings: {e}")
+        return False
+
 class ResumeAnalysisResponse(BaseModel):
     skills: List[str]
     experience: int
@@ -189,6 +218,53 @@ class AISuggestionsRequest(BaseModel):
     resumeSkills: List[str]
     jobDescriptionSkills: List[str]
     resumeSummary: str
+
+# Job Management Models
+class JobPosting(BaseModel):
+    title: str
+    company: str
+    location: str
+    jobType: str  # "Full-time", "Part-time", "Contract", "Internship"
+    experienceLevel: str  # "Entry Level", "Mid Level", "Senior Level", "Executive"
+    description: str
+    requirements: List[str]
+    skills: List[str]
+    salary: Optional[str] = None
+    benefits: Optional[List[str]] = None
+    applicationDeadline: Optional[str] = None
+
+class JobPostingResponse(BaseModel):
+    id: str
+    title: str
+    company: str
+    location: str
+    jobType: str
+    experienceLevel: str
+    description: str
+    requirements: List[str]
+    skills: List[str]
+    salary: Optional[str] = None
+    benefits: Optional[List[str]] = None
+    applicationDeadline: Optional[str] = None
+    postedDate: str
+    status: str  # "Active", "Closed", "Draft"
+
+class ResumeJobMatch(BaseModel):
+    jobId: str
+    resumeId: str
+    matchScore: int
+    matchingSkills: List[str]
+    missingSkills: List[str]
+    suggestions: List[str]
+    overallAssessment: str
+
+class PersonalizedSuggestion(BaseModel):
+    resumeId: str
+    jobId: str
+    skillsToAdd: List[str]
+    skillsToRemove: List[str]
+    experienceGap: Optional[str] = None
+    recommendations: List[str]
 
 @app.get("/")
 async def root():
@@ -1327,6 +1403,349 @@ async def get_openrouter_completion(prompt: str) -> str:
     except Exception as e:
         print(f"Error getting OpenRouter completion: {str(e)}")
         raise
+
+# ========================================
+# JOB MANAGEMENT ENDPOINTS
+# ========================================
+
+@app.post("/api/jobs", response_model=JobPostingResponse)
+async def create_job_posting(job: JobPosting):
+    """
+    Create a new job posting
+    """
+    try:
+        # Generate unique ID and timestamps
+        job_id = str(uuid.uuid4())
+        posted_date = datetime.now().isoformat()
+        
+        # Create job posting response object
+        job_response = {
+            "id": job_id,
+            "title": job.title,
+            "company": job.company,
+            "location": job.location,
+            "jobType": job.jobType,
+            "experienceLevel": job.experienceLevel,
+            "description": job.description,
+            "requirements": job.requirements,
+            "skills": job.skills,
+            "salary": job.salary,
+            "benefits": job.benefits,
+            "applicationDeadline": job.applicationDeadline,
+            "postedDate": posted_date,
+            "status": "Active"
+        }
+        
+        # Add to storage
+        JOB_POSTINGS.append(job_response)
+        save_job_postings()
+        
+        print(f"Created new job posting: {job.title} at {job.company}")
+        return job_response
+        
+    except Exception as e:
+        print(f"Error creating job posting: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create job posting: {str(e)}")
+
+@app.get("/api/jobs", response_model=List[JobPostingResponse])
+async def get_all_jobs():
+    """
+    Get all active job postings
+    """
+    try:
+        # Create sample jobs if none exist
+        if not JOB_POSTINGS:
+            create_sample_jobs()
+        
+        # Filter active jobs only
+        active_jobs = [job for job in JOB_POSTINGS if job.get("status") == "Active"]
+        
+        print(f"Returning {len(active_jobs)} active job postings")
+        return active_jobs
+        
+    except Exception as e:
+        print(f"Error getting job postings: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get job postings: {str(e)}")
+
+@app.get("/api/jobs/{job_id}", response_model=JobPostingResponse)
+async def get_job_by_id(job_id: str):
+    """
+    Get a specific job posting by ID
+    """
+    try:
+        job = next((j for j in JOB_POSTINGS if j["id"] == job_id), None)
+        
+        if not job:
+            raise HTTPException(status_code=404, detail=f"Job posting {job_id} not found")
+        
+        return job
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting job posting: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get job posting: {str(e)}")
+
+@app.post("/api/jobs/{job_id}/match-resumes", response_model=List[ResumeJobMatch])
+async def match_resumes_to_job(job_id: str):
+    """
+    Find matching resumes for a specific job posting
+    """
+    try:
+        # Find the job
+        job = next((j for j in JOB_POSTINGS if j["id"] == job_id), None)
+        if not job:
+            raise HTTPException(status_code=404, detail=f"Job posting {job_id} not found")
+        
+        # Get user resumes
+        global USER_RESUMES
+        USER_RESUMES = storage.load_resumes()
+        
+        if not USER_RESUMES:
+            return []
+        
+        matches = []
+        job_skills = job.get("skills", [])
+        job_description = f"{job.get('title', '')} {job.get('description', '')}"
+        
+        for resume in USER_RESUMES:
+            resume_skills = resume.get("skills", [])
+            
+            # Calculate matching and missing skills
+            matching_skills = []
+            for job_skill in job_skills:
+                for resume_skill in resume_skills:
+                    if job_skill.lower() in resume_skill.lower() or resume_skill.lower() in job_skill.lower():
+                        matching_skills.append(job_skill)
+                        break
+            
+            missing_skills = [skill for skill in job_skills if skill not in matching_skills]
+            
+            # Calculate match score (percentage of job skills found in resume)
+            if job_skills:
+                match_score = int((len(matching_skills) / len(job_skills)) * 100)
+            else:
+                match_score = 0
+            
+            # Generate suggestions using AI or rule-based approach
+            suggestions = []
+            if missing_skills:
+                suggestions.append(f"Consider adding skills: {', '.join(missing_skills[:3])}")
+            if len(matching_skills) > 0:
+                suggestions.append(f"Strong match in: {', '.join(matching_skills[:3])}")
+            
+            # Generate overall assessment
+            if match_score >= 80:
+                assessment = "Excellent match - highly recommended"
+            elif match_score >= 60:
+                assessment = "Good match - recommended with some skill development"
+            elif match_score >= 40:
+                assessment = "Moderate match - significant skill gaps to address"
+            else:
+                assessment = "Low match - major skill development needed"
+            
+            match = {
+                "jobId": job_id,
+                "resumeId": resume["id"],
+                "matchScore": match_score,
+                "matchingSkills": matching_skills,
+                "missingSkills": missing_skills,
+                "suggestions": suggestions,
+                "overallAssessment": assessment
+            }
+            matches.append(match)
+        
+        # Sort by match score (highest first)
+        matches.sort(key=lambda x: x["matchScore"], reverse=True)
+        
+        print(f"Found {len(matches)} resume matches for job {job['title']}")
+        return matches
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error matching resumes to job: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to match resumes: {str(e)}")
+
+@app.post("/api/resumes/{resume_id}/personalized-suggestions")
+async def get_personalized_suggestions(resume_id: str, job_id: str = Body(..., embed=True)):
+    """
+    Get personalized suggestions for a resume based on a specific job
+    """
+    try:
+        # Find the resume
+        resume = next((r for r in USER_RESUMES if r["id"] == resume_id), None)
+        if not resume:
+            raise HTTPException(status_code=404, detail=f"Resume {resume_id} not found")
+        
+        # Find the job
+        job = next((j for j in JOB_POSTINGS if j["id"] == job_id), None)
+        if not job:
+            raise HTTPException(status_code=404, detail=f"Job posting {job_id} not found")
+        
+        resume_skills = resume.get("skills", [])
+        job_skills = job.get("skills", [])
+        job_requirements = job.get("requirements", [])
+        
+        # Analyze skills
+        matching_skills = []
+        skills_to_add = []
+        
+        for job_skill in job_skills:
+            found = False
+            for resume_skill in resume_skills:
+                if job_skill.lower() in resume_skill.lower() or resume_skill.lower() in job_skill.lower():
+                    matching_skills.append(job_skill)
+                    found = True
+                    break
+            if not found:
+                skills_to_add.append(job_skill)
+        
+        # Identify potentially irrelevant skills (simple heuristic)
+        skills_to_remove = []
+        irrelevant_keywords = ["blog", "social media", "photography", "gaming"]
+        for resume_skill in resume_skills:
+            if any(keyword in resume_skill.lower() for keyword in irrelevant_keywords):
+                if resume_skill not in matching_skills:
+                    skills_to_remove.append(resume_skill)
+        
+        # Experience gap analysis
+        resume_experience = resume.get("experience", "0")
+        job_experience_req = job.get("experienceLevel", "")
+        experience_gap = None
+        
+        try:
+            resume_years = int(str(resume_experience).replace("+", "").strip())
+            if "senior" in job_experience_req.lower() and resume_years < 5:
+                experience_gap = f"Job requires senior level ({job_experience_req}), but resume shows {resume_years} years"
+            elif "mid" in job_experience_req.lower() and resume_years < 3:
+                experience_gap = f"Job requires mid-level experience, but resume shows {resume_years} years"
+        except:
+            pass
+        
+        # Generate recommendations using AI if available
+        recommendations = []
+        if OPENROUTER_API_AVAILABLE:
+            try:
+                prompt = f"""As a career advisor, provide 3-4 specific recommendations for improving this resume for the job posting:
+
+JOB: {job.get('title')} at {job.get('company')}
+JOB SKILLS REQUIRED: {', '.join(job_skills)}
+RESUME SKILLS: {', '.join(resume_skills)}
+MISSING SKILLS: {', '.join(skills_to_add)}
+
+Provide specific, actionable advice in bullet points."""
+
+                ai_recommendations = await get_openrouter_completion(prompt)
+                recommendations = [rec.strip() for rec in ai_recommendations.split('\n') if rec.strip() and not rec.strip().startswith('#')]
+            except:
+                pass
+        
+        # Fallback recommendations
+        if not recommendations:
+            if skills_to_add:
+                recommendations.append(f"Learn and add these key skills: {', '.join(skills_to_add[:3])}")
+            if skills_to_remove:
+                recommendations.append(f"Consider removing less relevant skills: {', '.join(skills_to_remove[:2])}")
+            if experience_gap:
+                recommendations.append("Highlight relevant projects and responsibilities to demonstrate experience level")
+            recommendations.append("Tailor your resume summary to match the job description keywords")
+        
+        suggestion = {
+            "resumeId": resume_id,
+            "jobId": job_id,
+            "skillsToAdd": skills_to_add[:5],  # Limit to top 5
+            "skillsToRemove": skills_to_remove[:3],  # Limit to top 3
+            "experienceGap": experience_gap,
+            "recommendations": recommendations[:4]  # Limit to top 4
+        }
+        
+        return suggestion
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error generating personalized suggestions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate suggestions: {str(e)}")
+
+def create_sample_jobs():
+    """Create sample job postings for demonstration"""
+    global JOB_POSTINGS
+    if not JOB_POSTINGS:  # Only create if no jobs exist
+        sample_jobs = [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Senior Python Developer",
+                "company": "TechCorp Solutions",
+                "location": "San Francisco, CA",
+                "jobType": "Full-time",
+                "experienceLevel": "Senior Level",
+                "description": "We are looking for a Senior Python Developer to join our dynamic team. You will be responsible for developing and maintaining high-quality Python applications, working with modern frameworks like Django and Flask, and collaborating with cross-functional teams.",
+                "requirements": [
+                    "5+ years of Python development experience",
+                    "Experience with Django or Flask frameworks",
+                    "Strong knowledge of SQL and database design",
+                    "Experience with REST API development",
+                    "Familiarity with cloud platforms (AWS/Azure)",
+                    "Bachelor's degree in Computer Science or related field"
+                ],
+                "skills": ["Python", "Django", "Flask", "SQL", "REST API", "AWS", "Git", "PostgreSQL", "Redis"],
+                "salary": "$120,000 - $150,000",
+                "benefits": ["Health Insurance", "401k", "Remote Work", "Flexible Hours"],
+                "applicationDeadline": "2025-08-15",
+                "postedDate": datetime.now().isoformat(),
+                "status": "Active"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Data Scientist - Machine Learning",
+                "company": "AI Innovations Inc",
+                "location": "Boston, MA",
+                "jobType": "Full-time",
+                "experienceLevel": "Mid Level",
+                "description": "Join our ML team to develop cutting-edge machine learning models for predictive analytics. You'll work with large datasets, implement ML algorithms, and deploy models to production.",
+                "requirements": [
+                    "3+ years of experience in data science and machine learning",
+                    "Proficiency in Python and R",
+                    "Experience with TensorFlow, PyTorch, or scikit-learn",
+                    "Strong statistics and mathematics background",
+                    "Experience with cloud ML platforms",
+                    "Master's degree preferred"
+                ],
+                "skills": ["Python", "R", "Machine Learning", "TensorFlow", "PyTorch", "Statistics", "SQL", "Pandas", "NumPy"],
+                "salary": "$100,000 - $130,000",
+                "benefits": ["Health Insurance", "Stock Options", "Learning Budget", "Flexible PTO"],
+                "applicationDeadline": "2025-07-30",
+                "postedDate": datetime.now().isoformat(),
+                "status": "Active"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Frontend React Developer",
+                "company": "StartupXYZ",
+                "location": "Remote",
+                "jobType": "Full-time",
+                "experienceLevel": "Mid Level",
+                "description": "We're seeking a talented Frontend Developer to build responsive, user-friendly web applications using React and modern JavaScript. You'll collaborate with designers and backend developers to create seamless user experiences.",
+                "requirements": [
+                    "3+ years of React development experience",
+                    "Strong proficiency in JavaScript, HTML, CSS",
+                    "Experience with state management (Redux/Context)",
+                    "Familiarity with modern build tools (Webpack, Vite)",
+                    "Knowledge of RESTful APIs",
+                    "Portfolio of previous work required"
+                ],
+                "skills": ["React", "JavaScript", "TypeScript", "HTML", "CSS", "Redux", "REST API", "Git", "Webpack"],
+                "salary": "$85,000 - $110,000",
+                "benefits": ["Remote Work", "Health Insurance", "Equity", "Professional Development"],
+                "applicationDeadline": "2025-08-01",
+                "postedDate": datetime.now().isoformat(),
+                "status": "Active"
+            }
+        ]
+        JOB_POSTINGS.extend(sample_jobs)
+        save_job_postings()
+        print(f"Created {len(sample_jobs)} sample job postings")
 
 if __name__ == "__main__":
     try:

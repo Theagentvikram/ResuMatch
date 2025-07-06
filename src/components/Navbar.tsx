@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { FileText, Search, Upload, User, ChevronDown, LogOut, BarChart, Trash2 } from "lucide-react";
+import { FileText, Search, Upload, User, ChevronDown, LogOut, BarChart, Trash2, Briefcase, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -47,6 +47,11 @@ export function Navbar() {
                       <BarChart className="h-4 w-4" /> AI Analysis
                     </Button>
                   </Link>
+                  <Link to="/recruiter/post-job">
+                    <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
+                      <Plus className="h-4 w-4" /> Post Job
+                    </Button>
+                  </Link>
                 </div>
               )}
               
@@ -60,6 +65,11 @@ export function Navbar() {
                   <Link to="/upload-status">
                     <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
                       <FileText className="h-4 w-4" /> Status
+                    </Button>
+                  </Link>
+                  <Link to="/jobs">
+                    <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
+                      <Briefcase className="h-4 w-4" /> Jobs
                     </Button>
                   </Link>
                 </div>
@@ -99,6 +109,11 @@ export function Navbar() {
                           <Trash2 className="h-4 w-4 mr-2" /> Manage Resumes
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
+                        <Link to="/recruiter/post-job" className="flex items-center w-full">
+                          <Plus className="h-4 w-4 mr-2" /> Post Job
+                        </Link>
+                      </DropdownMenuItem>
                     </>
                   )}
                   
@@ -112,6 +127,11 @@ export function Navbar() {
                       <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
                         <Link to="/upload-status" className="flex items-center w-full">
                           <FileText className="h-4 w-4 mr-2" /> View Status
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
+                        <Link to="/jobs" className="flex items-center w-full">
+                          <Briefcase className="h-4 w-4 mr-2" /> Browse Jobs
                         </Link>
                       </DropdownMenuItem>
                     </>

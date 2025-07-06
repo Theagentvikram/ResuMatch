@@ -19,6 +19,8 @@ import ResumeDetailsPage from "./pages/ResumeDetailsPage";
 import NotFound from "./pages/NotFound";
 import { RecruiterResumesManagementPage } from "./pages/RecruiterResumesManagementPage";
 import SignupPage from "./pages/SignupPage";
+import JobPostingPage from "./pages/JobPostingPage";
+import JobPortalPage from "./pages/JobPortalPage";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +65,14 @@ const App = () => (
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/jobs" 
+                element={
+                  <ProtectedRoute requiredUserType="applicant">
+                    <JobPortalPage />
+                  </ProtectedRoute>
+                } 
+              />
               
               {/* Recruiter Routes */}
               <Route 
@@ -78,6 +88,32 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredUserType="recruiter">
                     <RecruiterResumesManagementPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/recruiter/post-job" 
+                element={
+                  <ProtectedRoute requiredUserType="recruiter">
+                    <JobPostingPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Job Portal Routes */}
+              <Route 
+                path="/job-portal" 
+                element={
+                  <ProtectedRoute requiredUserType="applicant">
+                    <JobPortalPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/job-posting" 
+                element={
+                  <ProtectedRoute requiredUserType="recruiter">
+                    <JobPostingPage />
                   </ProtectedRoute>
                 } 
               />

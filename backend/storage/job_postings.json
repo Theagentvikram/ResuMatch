@@ -1,0 +1,132 @@
+[
+  {
+    "id": "30593ed2-4bc5-426d-8677-94af5dcd2759",
+    "title": "Senior Python Developer",
+    "company": "TechCorp Solutions",
+    "location": "San Francisco, CA",
+    "jobType": "Full-time",
+    "experienceLevel": "Senior Level",
+    "description": "We are looking for a Senior Python Developer to join our dynamic team. You will be responsible for developing and maintaining high-quality Python applications, working with modern frameworks like Django and Flask, and collaborating with cross-functional teams.",
+    "requirements": [
+      "5+ years of Python development experience",
+      "Experience with Django or Flask frameworks",
+      "Strong knowledge of SQL and database design",
+      "Experience with REST API development",
+      "Familiarity with cloud platforms (AWS/Azure)",
+      "Bachelor's degree in Computer Science or related field"
+    ],
+    "skills": [
+      "Python",
+      "Django",
+      "Flask",
+      "SQL",
+      "REST API",
+      "AWS",
+      "Git",
+      "PostgreSQL",
+      "Redis"
+    ],
+    "salary": "$120,000 - $150,000",
+    "benefits": [
+      "Health Insurance",
+      "401k",
+      "Remote Work",
+      "Flexible Hours"
+    ],
+    "applicationDeadline": "2025-08-15",
+    "postedDate": "2025-07-06T15:20:39.174993",
+    "status": "Active"
+  },
+  {
+    "id": "734a01e6-a12e-44f1-9ad1-a94b2daaddee",
+    "title": "Data Scientist - Machine Learning",
+    "company": "AI Innovations Inc",
+    "location": "Boston, MA",
+    "jobType": "Full-time",
+    "experienceLevel": "Mid Level",
+    "description": "Join our ML team to develop cutting-edge machine learning models for predictive analytics. You'll work with large datasets, implement ML algorithms, and deploy models to production.",
+    "requirements": [
+      "3+ years of experience in data science and machine learning",
+      "Proficiency in Python and R",
+      "Experience with TensorFlow, PyTorch, or scikit-learn",
+      "Strong statistics and mathematics background",
+      "Experience with cloud ML platforms",
+      "Master's degree preferred"
+    ],
+    "skills": [
+      "Python",
+      "R",
+      "Machine Learning",
+      "TensorFlow",
+      "PyTorch",
+      "Statistics",
+      "SQL",
+      "Pandas",
+      "NumPy"
+    ],
+    "salary": "$100,000 - $130,000",
+    "benefits": [
+      "Health Insurance",
+      "Stock Options",
+      "Learning Budget",
+      "Flexible PTO"
+    ],
+    "applicationDeadline": "2025-07-30",
+    "postedDate": "2025-07-06T15:20:39.175040",
+    "status": "Active"
+  },
+  {
+    "id": "cb6d7726-4d68-4fbe-ac9e-8e80debf3d53",
+    "title": "Frontend React Developer",
+    "company": "StartupXYZ",
+    "location": "Remote",
+    "jobType": "Full-time",
+    "experienceLevel": "Mid Level",
+    "description": "We're seeking a talented Frontend Developer to build responsive, user-friendly web applications using React and modern JavaScript. You'll collaborate with designers and backend developers to create seamless user experiences.",
+    "requirements": [
+      "3+ years of React development experience",
+      "Strong proficiency in JavaScript, HTML, CSS",
+      "Experience with state management (Redux/Context)",
+      "Familiarity with modern build tools (Webpack, Vite)",
+      "Knowledge of RESTful APIs",
+      "Portfolio of previous work required"
+    ],
+    "skills": [
+      "React",
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS",
+      "Redux",
+      "REST API",
+      "Git",
+      "Webpack"
+    ],
+    "salary": "$85,000 - $110,000",
+    "benefits": [
+      "Remote Work",
+      "Health Insurance",
+      "Equity",
+      "Professional Development"
+    ],
+    "applicationDeadline": "2025-08-01",
+    "postedDate": "2025-07-06T15:20:39.175046",
+    "status": "Active"
+  },
+  {
+    "id": "7402fc28-dfbb-4b9b-9e99-204bc67c3545",
+    "title": "Blogger",
+    "company": "Techabhee",
+    "location": "klr 258, kodad ",
+    "jobType": "Full-time",
+    "experienceLevel": "Mid Level",
+    "description": "Python Senior developer",
+    "requirements": [],
+    "skills": [],
+    "salary": "$120000 - $150000",
+    "benefits": [],
+    "applicationDeadline": "2025-07-24",
+    "postedDate": "2025-07-06T15:36:11.350383",
+    "status": "Active"
+  }
+]
