@@ -412,37 +412,52 @@ async def get_user_resumes():
         for r in USER_RESUMES:
             print(f"  - {r['id']}: {r['filename']}")
             
-        # If we have no resumes, create some mock data
+        # If we have no resumes, create some sample data
         if not USER_RESUMES:
-            # Add some mock resumes for demonstration
+            # Add some sample resumes for demonstration
             now = datetime.now().isoformat()
-            mock_resumes = [
+            sample_resumes = [
                 {
                     "id": str(uuid.uuid4()),
-                    "filename": "resume1.pdf",
-                    "download_url": "/mock/resume1.pdf",
+                    "filename": "john_doe_resume.pdf",
+                    "download_url": f"/api/resumes/download/{str(uuid.uuid4())}",
                     "upload_date": now,
                     "status": "processed",
-                    "summary": "Experienced software engineer with 5 years in web development.",
-                    "skills": ["JavaScript", "React", "Node.js", "TypeScript", "MongoDB"],
-                    "experience": "5",
+                    "summary": "Software Engineer with 4 years of experience in Python, JavaScript, and cloud technologies. Skilled in machine learning and data processing.",
+                    "skills": ["Python", "JavaScript", "React", "Node.js", "AWS", "Machine Learning", "TensorFlow", "SQL"],
+                    "experience": "4",
                     "educationLevel": "Bachelor's",
-                    "category": "Software Engineer"
+                    "category": "Software Engineer",
+                    "file_path": "/app/sample_resume1.pdf"
                 },
                 {
                     "id": str(uuid.uuid4()),
-                    "filename": "resume2.pdf",
-                    "download_url": "/mock/resume2.pdf",
+                    "filename": "sarah_smith_resume.pdf",
+                    "download_url": f"/api/resumes/download/{str(uuid.uuid4())}",
                     "upload_date": now,
-                    "status": "pending",
-                    "summary": "",
-                    "skills": [],
-                    "experience": "",
-                    "educationLevel": "",
-                    "category": ""
+                    "status": "processed",
+                    "summary": "Data Scientist with 3 years of experience in machine learning, deep learning, and statistical analysis. Proficient in Python and R.",
+                    "skills": ["Python", "R", "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Pandas", "NumPy", "Statistics"],
+                    "experience": "3",
+                    "educationLevel": "Master's",
+                    "category": "Data Scientist",
+                    "file_path": "/app/sample_resume2.pdf"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "filename": "mike_johnson_resume.pdf",
+                    "download_url": f"/api/resumes/download/{str(uuid.uuid4())}",
+                    "upload_date": now,
+                    "status": "processed",
+                    "summary": "AI/ML Engineer with 5 years of experience in computer vision, NLP, and model deployment. Strong background in Python and cloud platforms.",
+                    "skills": ["Python", "Machine Learning", "Deep Learning", "Computer Vision", "NLP", "TensorFlow", "PyTorch", "Kubernetes", "Docker"],
+                    "experience": "5",
+                    "educationLevel": "Master's",
+                    "category": "AI Engineer",
+                    "file_path": "/app/sample_resume3.pdf"
                 }
             ]
-            USER_RESUMES.extend(mock_resumes)
+            USER_RESUMES.extend(sample_resumes)
             save_resumes(USER_RESUMES)
             
         return USER_RESUMES
@@ -548,6 +563,20 @@ async def search_resume(search_query: SearchQuery):
     """
     try:
         print(f"Received search query: {search_query.query}, search_type: {search_query.search_type}")
+        
+        # Reload resumes from file to ensure we have the latest data
+        global USER_RESUMES
+        USER_RESUMES = load_resumes()
+        print(f"Loaded {len(USER_RESUMES)} resumes from storage file")
+        
+        # Check if storage file exists and what's in it
+        if RESUMES_FILE.exists():
+            print(f"Storage file exists at: {RESUMES_FILE}")
+            print(f"Storage file size: {RESUMES_FILE.stat().st_size} bytes")
+        else:
+            print(f"Storage file doesn't exist at: {RESUMES_FILE}")
+            # Create the directory if it doesn't exist
+            RESUMES_FILE.parent.mkdir(parents=True, exist_ok=True)
         
         # If no results or no user resumes, return mock data in SearchResult format
         mock_results_data = [
@@ -674,7 +703,88 @@ async def search_resume(search_query: SearchQuery):
                 print(f"No matches found after {search_query.search_type} scoring attempts, returning mock data.")
                 return mock_results_data # Fallback if no relevant results
         else:
-            print("No user resumes found, returning mock data.")
+            print("No user resumes found in storage.")
+            
+            # If we're in production and have no resumes, create some sample ones
+            # This helps demonstrate the platform functionality
+            if not USER_RESUMES:
+                print("Creating sample resumes for demonstration...")
+                now = datetime.now().isoformat()
+                sample_resumes = [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "filename": "john_doe_resume.pdf",
+                        "download_url": f"/api/resumes/download/{str(uuid.uuid4())}",
+                        "upload_date": now,
+                        "status": "processed",
+                        "summary": "Software Engineer with 4 years of experience in Python, JavaScript, and cloud technologies. Skilled in machine learning and data processing.",
+                        "skills": ["Python", "JavaScript", "React", "Node.js", "AWS", "Machine Learning", "TensorFlow", "SQL"],
+                        "experience": "4",
+                        "educationLevel": "Bachelor's",
+                        "category": "Software Engineer",
+                        "file_path": "/app/sample_resume1.pdf"
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "filename": "sarah_smith_resume.pdf", 
+                        "download_url": f"/api/resumes/download/{str(uuid.uuid4())}",
+                        "upload_date": now,
+                        "status": "processed",
+                        "summary": "Data Scientist with 3 years of experience in machine learning, deep learning, and statistical analysis. Proficient in Python and R.",
+                        "skills": ["Python", "R", "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Pandas", "NumPy", "Statistics"],
+                        "experience": "3",
+                        "educationLevel": "Master's",
+                        "category": "Data Scientist",
+                        "file_path": "/app/sample_resume2.pdf"
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "filename": "mike_johnson_resume.pdf",
+                        "download_url": f"/api/resumes/download/{str(uuid.uuid4())}",
+                        "upload_date": now,
+                        "status": "processed", 
+                        "summary": "AI/ML Engineer with 5 years of experience in computer vision, NLP, and model deployment. Strong background in Python and cloud platforms.",
+                        "skills": ["Python", "Machine Learning", "Deep Learning", "Computer Vision", "NLP", "TensorFlow", "PyTorch", "Kubernetes", "Docker"],
+                        "experience": "5",
+                        "educationLevel": "Master's", 
+                        "category": "AI Engineer",
+                        "file_path": "/app/sample_resume3.pdf"
+                    }
+                ]
+                
+                USER_RESUMES.extend(sample_resumes)
+                save_resumes(USER_RESUMES)
+                print(f"Created {len(sample_resumes)} sample resumes for demonstration")
+                
+                # Now try to search through the sample resumes
+                results = []
+                for resume in USER_RESUMES:
+                    score_result = {"score": 0, "reason": "", "source": ""}
+                    
+                    if search_query.search_type == "ai_analysis":
+                        # For sample resumes, use keyword matching as fallback
+                        score_result = calculate_keyword_match_score(search_query.query, resume)
+                        score_result["source"] = "keyword_matching_sample"
+                    elif search_query.search_type == "resume_matching":
+                        score_result = calculate_keyword_match_score(search_query.query, resume)
+                        score_result["source"] = "keyword_matching"
+                    
+                    search_result = {
+                        "resume": resume,
+                        "matchScore": score_result["score"],
+                        "matchReason": score_result["reason"],
+                        "scoreSource": score_result["source"]
+                    }
+                    results.append(search_result)
+                
+                # Sort by match score
+                results.sort(key=lambda x: x.get("matchScore", 0), reverse=True)
+                
+                if results:
+                    print(f"Found {len(results)} matching sample resumes")
+                    return results
+            
+            print("No resumes available, returning mock data.")
             return mock_results_data
 
     except Exception as e:
