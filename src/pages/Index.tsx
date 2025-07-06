@@ -2,7 +2,7 @@ import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FileText, Search, Upload, UserCheck, Shield, Zap, Database, BarChart } from "lucide-react";
+import { FileText, Search, Upload, UserCheck, Shield, Zap, Database, BarChart, Briefcase } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -344,6 +344,76 @@ const Index = () => {
               <span className="relative z-10">Get Started Now</span>
             </Button>
           </motion.div>
+        </motion.div>
+      </section>
+
+      {/* Job Portal Feature Section */}
+      <section className="py-16 mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="max-w-6xl mx-auto px-4"
+        >
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4 text-white">🚀 New: Job Portal Integration</h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Connect jobs with the perfect candidates. Post positions and get AI-powered resume matches with personalized improvement suggestions.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <motion.div 
+              className="text-center p-8 bg-gradient-to-br from-blue-500/10 to-purple-500/10 backdrop-blur-md rounded-xl border border-white/20 relative overflow-hidden group"
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              whileHover={{ y: -5, boxShadow: "0 10px 30px -5px rgba(59, 130, 246, 0.4)" }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+              <div className="relative z-10">
+                <div className="mb-6 inline-flex p-4 bg-blue-500/20 rounded-full group-hover:bg-blue-500/30 transition-all duration-300">
+                  <Briefcase className="h-10 w-10 text-blue-400" />
+                </div>
+                <h3 className="text-2xl font-semibold mb-4 text-white">For Recruiters</h3>
+                <p className="text-gray-300 mb-6">
+                  Post job listings and instantly see which resumes match best. Get detailed analytics on candidate skills and experience levels.
+                </p>
+                <div className="space-y-2 text-sm text-gray-400">
+                  <div>✓ Smart job-resume matching</div>
+                  <div>✓ Skill gap analysis</div>
+                  <div>✓ AI-powered insights</div>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              className="text-center p-8 bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-md rounded-xl border border-white/20 relative overflow-hidden group"
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              whileHover={{ y: -5, boxShadow: "0 10px 30px -5px rgba(168, 85, 247, 0.4)" }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+              <div className="relative z-10">
+                <div className="mb-6 inline-flex p-4 bg-purple-500/20 rounded-full group-hover:bg-purple-500/30 transition-all duration-300">
+                  <BarChart className="h-10 w-10 text-purple-400" />
+                </div>
+                <h3 className="text-2xl font-semibold mb-4 text-white">For Job Seekers</h3>
+                <p className="text-gray-300 mb-6">
+                  Browse available jobs and see how well your resumes match. Get personalized suggestions to improve your chances.
+                </p>
+                <div className="space-y-2 text-sm text-gray-400">
+                  <div>✓ Resume-job compatibility scores</div>
+                  <div>✓ Personalized improvement tips</div>
+                  <div>✓ Skills recommendations</div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </motion.div>
       </section>
     </Layout>

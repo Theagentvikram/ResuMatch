@@ -52,6 +52,11 @@ export function Navbar() {
                       <Plus className="h-4 w-4" /> Post Job
                     </Button>
                   </Link>
+                  <Link to="/recruiter/jobs">
+                    <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
+                      <Briefcase className="h-4 w-4" /> View Jobs
+                    </Button>
+                  </Link>
                 </div>
               )}
               
@@ -112,6 +117,11 @@ export function Navbar() {
                       <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
                         <Link to="/recruiter/post-job" className="flex items-center w-full">
                           <Plus className="h-4 w-4 mr-2" /> Post Job
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
+                        <Link to="/recruiter/jobs" className="flex items-center w-full">
+                          <Briefcase className="h-4 w-4 mr-2" /> View Jobs
                         </Link>
                       </DropdownMenuItem>
                     </>

@@ -136,8 +136,8 @@ const JobPostingPage: React.FC = () => {
         description: `Job posting "${formData.title}" created successfully`,
       });
 
-      // Navigate to the recruiter dashboard or jobs list
-      navigate('/recruiter/jobs');
+      // Navigate to the search page after successful job posting
+      navigate('/search');
 
     } catch (error) {
       console.error('Error creating job posting:', error);

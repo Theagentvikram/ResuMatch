@@ -128,5 +128,37 @@
     "applicationDeadline": "2025-07-24",
     "postedDate": "2025-07-06T15:36:11.350383",
     "status": "Active"
+  },
+  {
+    "id": "87d15208-fd7f-46a7-a324-4ae354cc0e93",
+    "title": "Blogger",
+    "company": "Techabhee",
+    "location": "klr 258, kodad ",
+    "jobType": "Full-time",
+    "experienceLevel": "Mid Level",
+    "description": "asd",
+    "requirements": [],
+    "skills": [],
+    "salary": "232",
+    "benefits": [],
+    "applicationDeadline": "2025-07-25",
+    "postedDate": "2025-07-06T15:47:27.121207",
+    "status": "Active"
+  },
+  {
+    "id": "b4128e10-ca05-415f-b63f-deff7cf7a52c",
+    "title": "Blogger",
+    "company": "Techabhee",
+    "location": "klr 258, kodad ",
+    "jobType": "Full-time",
+    "experienceLevel": "Senior Level",
+    "description": "Python Senior Developer",
+    "requirements": [],
+    "skills": [],
+    "salary": "12400 - 243435",
+    "benefits": [],
+    "applicationDeadline": "2025-07-30",
+    "postedDate": "2025-07-06T16:42:02.340671",
+    "status": "Active"
   }
 ]

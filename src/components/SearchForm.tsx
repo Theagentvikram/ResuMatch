@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useResumes } from "@/contexts/ResumeContext";
-import { Search, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useResumes } from "@/contexts/ResumeContext";
+import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { JobDescriptionUpload } from "./JobDescriptionUpload";
@@ -19,15 +17,14 @@ interface JobDescription {
 }
 
 interface SearchFormProps {
-  searchType: "ai_analysis" | "resume_matching";
   onJobDescriptionUpdate?: (skills: string[]) => void;
 }
 
-export function SearchForm({ searchType, onJobDescriptionUpdate }: SearchFormProps) {
+export function SearchForm({ onJobDescriptionUpdate }: SearchFormProps) {
   const [query, setQuery] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
   const [jobDescription, setJobDescription] = useState<JobDescription | null>(null);
-  const { search, isSearching } = useResumes();
+  const { search } = useResumes();
   const { toast } = useToast();
 
   const handleJobDescriptionAnalyzed = (jd: JobDescription | null) => {
@@ -60,26 +57,6 @@ export function SearchForm({ searchType, onJobDescriptionUpdate }: SearchFormPro
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchError(null);
-    
-    if (query.trim()) {
-      try {
-        console.log("Submitting search query:", query);
-        await search(query, searchType);
-      } catch (error) {
-        console.error("Search error:", error);
-        setSearchError("There was an error processing your search. Please try again.");
-        toast({
-          variant: "destructive",
-          title: "Search Failed",
-          description: "There was an error processing your search. Please try again.",
-        });
-      }
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Job Description Upload */}
@@ -89,34 +66,25 @@ export function SearchForm({ searchType, onJobDescriptionUpdate }: SearchFormPro
         onSearchTriggered={handleSearchTriggered}
       />
       
-      <Card>
-        <CardContent className="pt-6">
-          {searchError && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{searchError}</AlertDescription>
-            </Alert>
-          )}
-          <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
-            <Input
-              type="text"
-              placeholder="Describe the candidate you're looking for..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={isSearching || !query.trim()}>
-              {isSearching ? (
-                "Searching..."
-              ) : (
-                <>
-                  <Search className="mr-2 h-4 w-4" /> Search
-                </>
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {searchError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{searchError}</AlertDescription>
+        </Alert>
+      )}
+      
+      {jobDescription && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm text-gray-600 mb-2">
+              <strong>Auto-generated search:</strong> {query}
+            </div>
+            <div className="text-xs text-gray-500">
+              Results are automatically generated based on your job description analysis.
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

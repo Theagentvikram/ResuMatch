@@ -4,6 +4,13 @@ An intelligent recruitment platform that uses AI to match job descriptions with 
 
 ## 🆕 Recent Updates
 
+### 🎉 Job Portal Integration (Latest)
+1. **Job Posting System** - HR/Recruiters can create and manage job postings
+2. **Smart Resume-Job Matching** - AI-powered matching with detailed compatibility scores
+3. **Personalized Suggestions** - Get actionable improvement tips for resumes based on specific jobs
+4. **Skills Gap Analysis** - Identify missing skills and get recommendations
+5. **Job Portal for Applicants** - Browse available jobs and see which resumes match best
+
 ### Enhanced Recruiter Experience
 1. **Job Description File Upload** - Upload PDF, Word, or text files to extract required skills and qualifications automatically
 2. **Smart Skill Highlighting** - Matched skills are highlighted in green, unmatched skills remain standard
@@ -12,14 +19,17 @@ An intelligent recruitment platform that uses AI to match job descriptions with 
 ## 🚀 Features
 
 ### For Recruiters
+- **Job Posting & Management** - Create, edit, and manage job listings
 - **Smart Job Description Analysis** - Upload JD files or paste text to extract skills, requirements, and experience levels
 - **Advanced Resume Search** - Natural language queries with AI-powered matching
-- **Skill Matching Visualization** - Visual indication of matched vs. unmatched skills
+- **Resume-Job Matching** - See compatibility scores and skill gaps for each candidate
 - **AI Candidate Insights** - Get personalized suggestions for each candidate
 - **Resume Management** - View, filter, and download candidate profiles
 
 ### For Applicants
+- **Job Portal** - Browse available job postings and see compatibility with your resumes
 - **Resume Upload & Analysis** - Automated PDF processing with skill extraction
+- **Personalized Improvement Tips** - Get AI-powered suggestions to improve your resume for specific jobs
 - **Status Tracking** - Monitor application progress
 - **Profile Management** - View processed resume data
 
@@ -97,7 +107,14 @@ uvicorn main:app --reload
 
 ## 📝 API Endpoints
 
-### New Endpoints Added
+### New Job Portal Endpoints
+
+#### Job Management
+- `POST /api/jobs` - Create a new job posting
+- `GET /api/jobs` - Get all job postings
+- `GET /api/jobs/{job_id}` - Get specific job details
+- `POST /api/jobs/{job_id}/match-resumes` - Get resume matches for a job
+- `POST /api/resumes/{resume_id}/personalized-suggestions` - Get AI suggestions for a resume-job combination
 
 #### Job Description Analysis
 - `POST /api/job-description/analyze` - Analyze uploaded JD file
