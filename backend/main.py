@@ -285,9 +285,11 @@ async def analyze_resume(file: Optional[UploadFile] = File(None), text: Optional
         resume_text = ""
         
         # Handle direct text input
-        if text:
+        if text is not None:
             if isinstance(text, dict) and "text" in text:
                 resume_text = text["text"]
+            elif isinstance(text, str):
+                resume_text = text
             else:
                 resume_text = str(text)
         
@@ -344,10 +346,25 @@ async def analyze_resume(file: Optional[UploadFile] = File(None), text: Optional
             try:
                 # Try OpenRouter API
                 print("Using OpenRouter API for analysis")
-                result = await analyze_resume_with_openrouter(resume_text)
+                result = analyze_resume_with_openrouter(resume_text)
                 return result
             except Exception as e:
                 print(f"OpenRouter API analysis failed: {str(e)}. Falling back to regex.")
+                result = analyze_resume_with_regex(resume_text)
+                return result
+        elif ANALYZER_MODE == "auto":
+            # Auto mode - try OpenRouter API first, then fall back to regex
+            if OPENROUTER_API_AVAILABLE:
+                try:
+                    print("Using OpenRouter API for analysis (auto mode)")
+                    result = analyze_resume_with_openrouter(resume_text)
+                    return result
+                except Exception as e:
+                    print(f"OpenRouter API analysis failed: {str(e)}. Falling back to regex.")
+                    result = analyze_resume_with_regex(resume_text)
+                    return result
+            else:
+                print("OpenRouter API not available, using regex-based analysis")
                 result = analyze_resume_with_regex(resume_text)
                 return result
         else:
@@ -358,6 +375,63 @@ async def analyze_resume(file: Optional[UploadFile] = File(None), text: Optional
         
     except Exception as e:
         print(f"Error in analyze_resume: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Resume analysis failed: {str(e)}"}
+        )
+
+@app.post("/api/resumes/analyze-text", response_model=AnalysisResult)
+async def analyze_resume_text(request: TextAnalysisRequest):
+    """
+    Analyze resume text directly and extract key information
+    """
+    try:
+        resume_text = request.text
+        
+        # Check if we have enough text to analyze
+        if not resume_text or len(resume_text.strip()) < 50:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Not enough text content to analyze"}
+            )
+        
+        # Analyze the resume text
+        print(f"Analyzing resume text ({len(resume_text)} chars)")
+        
+        # Use the appropriate analyzer based on mode
+        if ANALYZER_MODE == "api" and OPENROUTER_API_AVAILABLE:
+            try:
+                # Try OpenRouter API
+                print("Using OpenRouter API for analysis")
+                result = analyze_resume_with_openrouter(resume_text)
+                return result
+            except Exception as e:
+                print(f"OpenRouter API analysis failed: {str(e)}. Falling back to regex.")
+                result = analyze_resume_with_regex(resume_text)
+                return result
+        elif ANALYZER_MODE == "auto":
+            # Auto mode - try OpenRouter API first, then fall back to regex
+            if OPENROUTER_API_AVAILABLE:
+                try:
+                    print("Using OpenRouter API for analysis (auto mode)")
+                    result = analyze_resume_with_openrouter(resume_text)
+                    return result
+                except Exception as e:
+                    print(f"OpenRouter API analysis failed: {str(e)}. Falling back to regex.")
+                    result = analyze_resume_with_regex(resume_text)
+                    return result
+            else:
+                print("OpenRouter API not available, using regex-based analysis")
+                result = analyze_resume_with_regex(resume_text)
+                return result
+        else:
+            # Fallback to regex-based analysis
+            print("Using regex-based analysis")
+            result = analyze_resume_with_regex(resume_text)
+            return result
+        
+    except Exception as e:
+        print(f"Error in analyze_resume_text: {str(e)}")
         return JSONResponse(
             status_code=500,
             content={"detail": f"Resume analysis failed: {str(e)}"}
