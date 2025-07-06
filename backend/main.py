@@ -33,6 +33,43 @@ from services.database_service import save_resume_to_db, get_resumes, search_res
 from services.regex_service import analyze_resume_with_regex
 from services.openrouter_service import get_relevance_score_with_openrouter
 
+# Import persistent storage service
+try:
+    from services.persistent_storage import storage
+    PERSISTENT_STORAGE_AVAILABLE = True
+    print("Persistent storage service loaded successfully")
+except ImportError:
+    PERSISTENT_STORAGE_AVAILABLE = False
+    print("Persistent storage service not available, using local file storage")
+    # Create fallback storage object
+    class LocalStorage:
+        def save_resumes(self, resumes):
+            try:
+                with open("./storage/resumes.json", 'w') as f:
+                    json.dump(resumes, f, indent=2)
+                return True
+            except:
+                return False
+        
+        def load_resumes(self):
+            try:
+                with open("./storage/resumes.json", 'r') as f:
+                    return json.load(f)
+            except:
+                return []
+        
+        def add_resume(self, resume):
+            resumes = self.load_resumes()
+            resumes.append(resume)
+            return self.save_resumes(resumes)
+        
+        def delete_resume(self, resume_id):
+            resumes = self.load_resumes()
+            resumes = [r for r in resumes if r.get("id") != resume_id]
+            return self.save_resumes(resumes)
+    
+    storage = LocalStorage()
+
 # Import OpenRouter service for Mistral 7B
 try:
     from services.openrouter_service import analyze_resume_with_openrouter, get_openrouter_model_status
@@ -66,8 +103,16 @@ def download_model(url=None):
 # Load environment variables
 load_dotenv()
 
-# Get the desired analyzer mode from environment
-ANALYZER_MODE = os.getenv("ANALYZER_MODE", "auto").lower()  # "auto", "api", "offline", "regex", "llama_cpp"
+# Configuration
+ANALYZER_MODE = os.getenv("ANALYZER_MODE", "auto").lower()
+ENABLE_SAMPLE_DATA = os.getenv("ENABLE_SAMPLE_DATA", "false").lower() == "true"
+DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
+
+print(f"Starting ResuMatch API with:")
+print(f"  - Analyzer mode: {ANALYZER_MODE}")
+print(f"  - Sample data enabled: {ENABLE_SAMPLE_DATA}")
+print(f"  - Database URL configured: {'Yes' if DATABASE_URL else 'No'}")
+print(f"  - Persistent storage available: {PERSISTENT_STORAGE_AVAILABLE}")
 
 app = FastAPI(title="ResuMatch API", description="API for ResuMatch Resume Selection App")
 
@@ -91,28 +136,9 @@ app.add_middleware(
 # Create storage directory if it doesn't exist
 os.makedirs(LOCAL_STORAGE_DIR, exist_ok=True)
 
-# Resume storage file path
-RESUMES_FILE = Path("./storage/resumes.json")
-
-# Initialize resumes from file if it exists
-def load_resumes():
-    if RESUMES_FILE.exists():
-        try:
-            with open(RESUMES_FILE, 'r') as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"Error loading resumes: {str(e)}")
-    return []
-
-def save_resumes(resumes):
-    try:
-        with open(RESUMES_FILE, 'w') as f:
-            json.dump(resumes, f, indent=2)
-    except Exception as e:
-        print(f"Error saving resumes: {str(e)}")
-
-# Load existing resumes
-USER_RESUMES = load_resumes()
+# Load existing resumes using persistent storage
+USER_RESUMES = storage.load_resumes()
+print(f"Loaded {len(USER_RESUMES)} resumes from persistent storage on startup")
 
 class ResumeAnalysisResponse(BaseModel):
     skills: List[str]
@@ -383,9 +409,9 @@ async def upload_resume(file: UploadFile = File(...), metadata: str = Form(...))
             "file_path": str(file_path)
         }
         
-        # Add to our storage and save to file
+        # Add to our storage and save using persistent storage
         USER_RESUMES.append(resume)
-        save_resumes(USER_RESUMES)
+        storage.save_resumes(USER_RESUMES)
         
         # Print the current resumes for debugging
         print(f"Current resumes in storage: {len(USER_RESUMES)}")
@@ -403,18 +429,19 @@ async def get_user_resumes():
     Get resumes for the current user
     """
     try:
-        # Reload resumes from file to ensure we have the latest data
+        # Reload resumes from persistent storage to ensure we have the latest data
         global USER_RESUMES
-        USER_RESUMES = load_resumes()
+        USER_RESUMES = storage.load_resumes()
         
         # Print the current resumes for debugging
         print(f"Returning {len(USER_RESUMES)} resumes from storage")
         for r in USER_RESUMES:
             print(f"  - {r['id']}: {r['filename']}")
             
-        # If we have no resumes, create some sample data
-        if not USER_RESUMES:
-            # Add some sample resumes for demonstration
+        # Only create sample data if explicitly enabled via environment variable
+        # This prevents overriding real user data in production
+        if ENABLE_SAMPLE_DATA and not USER_RESUMES:
+            print("Creating sample resumes for demonstration (ENABLE_SAMPLE_DATA=true)...")
             now = datetime.now().isoformat()
             sample_resumes = [
                 {
@@ -458,8 +485,9 @@ async def get_user_resumes():
                 }
             ]
             USER_RESUMES.extend(sample_resumes)
-            save_resumes(USER_RESUMES)
-            
+            storage.save_resumes(USER_RESUMES)
+            print(f"Created {len(sample_resumes)} sample resumes for demonstration")
+        
         return USER_RESUMES
     except Exception as e:
         print(f"Error in get_user_resumes: {str(e)}")
@@ -564,77 +592,13 @@ async def search_resume(search_query: SearchQuery):
     try:
         print(f"Received search query: {search_query.query}, search_type: {search_query.search_type}")
         
-        # Reload resumes from file to ensure we have the latest data
+        # Reload resumes from persistent storage to ensure we have the latest data
         global USER_RESUMES
-        USER_RESUMES = load_resumes()
-        print(f"Loaded {len(USER_RESUMES)} resumes from storage file")
+        USER_RESUMES = storage.load_resumes()
+        print(f"Loaded {len(USER_RESUMES)} resumes from persistent storage")
         
-        # Check if storage file exists and what's in it
-        if RESUMES_FILE.exists():
-            print(f"Storage file exists at: {RESUMES_FILE}")
-            print(f"Storage file size: {RESUMES_FILE.stat().st_size} bytes")
-        else:
-            print(f"Storage file doesn't exist at: {RESUMES_FILE}")
-            # Create the directory if it doesn't exist
-            RESUMES_FILE.parent.mkdir(parents=True, exist_ok=True)
-        
-        # If no results or no user resumes, return mock data in SearchResult format
-        mock_results_data = [
-            {
-                "resume": {
-                    "id": str(uuid.uuid4()),
-                    "filename": "candidate1.pdf",
-                    "name": "candidate1.pdf",
-                    "originalName": "candidate1.pdf",
-                    "uploadDate": datetime.now().isoformat(),
-                    "summary": "Software engineer with 6 years of experience in Python and JavaScript.",
-                    "skills": ["Python", "JavaScript", "React", "Django", "AWS"],
-                    "experience": 6,
-                    "educationLevel": "Master's",
-                    "category": "Software Engineer",
-                    "status": "processed"
-                },
-                "matchScore": 92,
-                "matchReason": "Strong match on Python, JavaScript skills and experience level (Mock Data)",
-                "scoreSource": "mock_data"
-            },
-            {
-                "resume": {
-                    "id": str(uuid.uuid4()),
-                    "filename": "candidate2.pdf",
-                    "name": "candidate2.pdf",
-                    "originalName": "candidate2.pdf",
-                    "uploadDate": datetime.now().isoformat(),
-                    "summary": "Front-end developer with 4 years of experience creating responsive web applications.",
-                    "skills": ["JavaScript", "React", "CSS", "HTML", "TypeScript"],
-                    "experience": 4,
-                    "educationLevel": "Bachelor's",
-                    "category": "Front-end Developer",
-                    "status": "processed"
-                },
-                "matchScore": 85,
-                "matchReason": "Good match on frontend skills and web development experience (Mock Data)",
-                "scoreSource": "mock_data"
-            },
-            {
-                "resume": {
-                    "id": str(uuid.uuid4()),
-                    "filename": "candidate3.pdf",
-                    "name": "candidate3.pdf",
-                    "originalName": "candidate3.pdf",
-                    "uploadDate": datetime.now().isoformat(),
-                    "summary": "Full-stack developer with expertise in MERN stack and cloud services.",
-                    "skills": ["MongoDB", "Express", "React", "Node.js", "AWS"],
-                    "experience": 3,
-                    "educationLevel": "Bachelor's",
-                    "category": "Full-stack Developer",
-                    "status": "processed"
-                },
-                "matchScore": 78,
-                "matchReason": "Matches on full-stack development and cloud experience (Mock Data)",
-                "scoreSource": "mock_data"
-            }
-        ]
+        # Debug storage status
+        print(f"Using storage type: {getattr(storage, 'storage_type', 'local')}")
         
         if USER_RESUMES and len(USER_RESUMES) > 0:
             print(f"Searching through {len(USER_RESUMES)} user resumes")
@@ -700,15 +664,15 @@ async def search_resume(search_query: SearchQuery):
                 print(f"Found {len(results)} matching resumes using {search_query.search_type} scoring")
                 return results
             else:
-                print(f"No matches found after {search_query.search_type} scoring attempts, returning mock data.")
-                return mock_results_data # Fallback if no relevant results
+                print(f"No matches found after {search_query.search_type} scoring attempts, returning empty results.")
+                return []  # Return empty results instead of mock data
         else:
             print("No user resumes found in storage.")
             
-            # If we're in production and have no resumes, create some sample ones
-            # This helps demonstrate the platform functionality
-            if not USER_RESUMES:
-                print("Creating sample resumes for demonstration...")
+            # Only create sample data if explicitly enabled via environment variable
+            # This prevents overriding real user data in production
+            if ENABLE_SAMPLE_DATA and not USER_RESUMES:
+                print("Creating sample resumes for demonstration (ENABLE_SAMPLE_DATA=true)...")
                 now = datetime.now().isoformat()
                 sample_resumes = [
                     {
@@ -753,7 +717,7 @@ async def search_resume(search_query: SearchQuery):
                 ]
                 
                 USER_RESUMES.extend(sample_resumes)
-                save_resumes(USER_RESUMES)
+                storage.save_resumes(USER_RESUMES)
                 print(f"Created {len(sample_resumes)} sample resumes for demonstration")
                 
                 # Now try to search through the sample resumes
@@ -783,9 +747,12 @@ async def search_resume(search_query: SearchQuery):
                 if results:
                     print(f"Found {len(results)} matching sample resumes")
                     return results
+            else:
+                print("No sample data enabled, no resumes available.")
             
-            print("No resumes available, returning mock data.")
-            return mock_results_data
+            # If no resumes available and sample data not enabled, return empty results
+            print("No resumes available, returning empty results (not mock data).")
+            return []
 
     except Exception as e:
         print(f"Error in search_resume: {str(e)}")
@@ -878,7 +845,7 @@ async def delete_resume(resume_id: str):
             
             # Remove from storage
             USER_RESUMES = [r for r in USER_RESUMES if r["id"] != resume_id]
-            save_resumes(USER_RESUMES)
+            storage.save_resumes(USER_RESUMES)
             
         return {"status": "success", "message": f"Resume {resume_id} deleted successfully"}
     except Exception as e:

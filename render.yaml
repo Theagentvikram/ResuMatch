@@ -26,6 +26,14 @@ services:
         # Do not include the "Bearer " prefix in the API key
       - key: OPENROUTER_MODEL
         value: mistralai/mistral-7b-instruct:free
+      - key: ANALYZER_MODE
+        value: auto
+      - key: ENABLE_SAMPLE_DATA
+        value: false
+      - key: DATABASE_URL
+        sync: false
+        # Optional: Connect to a PostgreSQL database for persistent storage
+        # If not provided, will use JSON file storage (not persistent across restarts)
       - key: PORT
         value: 8000
       - key: PYTHONUNBUFFERED

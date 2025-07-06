@@ -26,6 +26,8 @@ scikit-learn==1.2.2
 
 # Database/Storage
 supabase==1.0.3
+psycopg2-binary==2.9.6
+sqlalchemy==2.0.13
 
 # Build tools
 setuptools>=65.5.1
