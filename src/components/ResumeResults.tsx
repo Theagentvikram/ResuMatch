@@ -231,9 +231,6 @@ export function ResumeResults({ jobDescriptionSkills = [] }: ResumeResultsProps)
                       Match reasons:
                     </div>
                     <p className="mt-1 text-sm whitespace-normal w-full break-words">{result.matchReason}</p>
-                    {result.scoreSource && (
-                      <p className="mt-1 text-gray-600 text-sm">Score source: {result.scoreSource.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</p>
-                    )}
                   </div>
                 )}
 

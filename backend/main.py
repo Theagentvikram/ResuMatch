@@ -375,7 +375,6 @@ async def upload_resume(file: UploadFile = File(...), metadata: str = Form(...))
             "download_url": f"/api/resumes/download/{resume_id}",
             "upload_date": timestamp,
             "status": "processed",
-            "match_score": random.randint(65, 95),
             "summary": meta_dict.get("summary", ""),
             "skills": meta_dict.get("skills", []),
             "experience": meta_dict.get("experience", ""),
@@ -424,7 +423,6 @@ async def get_user_resumes():
                     "download_url": "/mock/resume1.pdf",
                     "upload_date": now,
                     "status": "processed",
-                    "match_score": 88,
                     "summary": "Experienced software engineer with 5 years in web development.",
                     "skills": ["JavaScript", "React", "Node.js", "TypeScript", "MongoDB"],
                     "experience": "5",
@@ -437,7 +435,6 @@ async def get_user_resumes():
                     "download_url": "/mock/resume2.pdf",
                     "upload_date": now,
                     "status": "pending",
-                    "match_score": 0,
                     "summary": "",
                     "skills": [],
                     "experience": "",
@@ -897,7 +894,7 @@ Job Description:
 Please analyze the above job description and return ONLY a valid JSON object with this exact structure (no additional text):
 
 {{
-    "summary": "Brief 1-2 sentence summary of the role and main responsibilities",
+    "summary": "Comprehensive 3-4 sentence summary covering the role, key responsibilities, required skills, and company context to capture all important aspects",
     "skills": ["list", "of", "all", "technical", "skills", "tools", "frameworks", "mentioned"],
     "requirements": ["list", "of", "key", "requirements", "and", "qualifications"],
     "experience": "X-Y years or specific experience requirement mentioned",
@@ -905,6 +902,7 @@ Please analyze the above job description and return ONLY a valid JSON object wit
 }}
 
 Instructions:
+- For summary: Provide a detailed 3-4 sentence overview that includes role purpose, key responsibilities, essential skills/technologies, and any important company/project context
 - Extract ALL technical skills, programming languages, frameworks, libraries, databases, tools mentioned
 - For experience, use the EXACT requirement mentioned (e.g., "2-4 years", "3+ years", "minimum 5 years")
 - For category, use the actual job title from the description

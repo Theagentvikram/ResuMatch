@@ -42,6 +42,24 @@ export function SearchForm({ searchType, onJobDescriptionUpdate }: SearchFormPro
     }
   };
 
+  const handleSearchTriggered = async (query: string, searchType: "ai_analysis" | "resume_matching") => {
+    setQuery(query);
+    setSearchError(null);
+    
+    try {
+      console.log("Auto-triggered search query:", query);
+      await search(query, searchType);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchError("There was an error processing your search. Please try again.");
+      toast({
+        variant: "destructive",
+        title: "Search Failed",
+        description: "There was an error processing your search. Please try again.",
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSearchError(null);
@@ -62,24 +80,13 @@ export function SearchForm({ searchType, onJobDescriptionUpdate }: SearchFormPro
     }
   };
 
-  const placeholderQueries = [
-    "Python developer with 2+ years experience",
-    "Frontend engineer with React skills",
-    "Data scientist with machine learning background",
-    "Software engineer with JavaScript experience"
-  ];
-
-  const handleSampleQuery = (sampleQuery: string) => {
-    setQuery(sampleQuery);
-    search(sampleQuery, searchType);
-  };
-
   return (
     <div className="space-y-4">
       {/* Job Description Upload */}
       <JobDescriptionUpload
         onJobDescriptionAnalyzed={handleJobDescriptionAnalyzed}
         currentJD={jobDescription}
+        onSearchTriggered={handleSearchTriggered}
       />
       
       <Card>
@@ -108,23 +115,6 @@ export function SearchForm({ searchType, onJobDescriptionUpdate }: SearchFormPro
               )}
             </Button>
           </form>
-          
-          <div className="mt-4">
-            <p className="text-sm font-medium text-muted-foreground mb-2">Try sample queries:</p>
-            <div className="flex flex-wrap gap-2">
-              {placeholderQueries.map((sampleQuery) => (
-                <Button
-                  key={sampleQuery}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSampleQuery(sampleQuery)}
-                  className="text-xs"
-                >
-                  {sampleQuery}
-                </Button>
-              ))}
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

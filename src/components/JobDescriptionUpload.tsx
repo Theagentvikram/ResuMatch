@@ -20,9 +20,10 @@ interface JobDescription {
 interface JobDescriptionUploadProps {
   onJobDescriptionAnalyzed: (jd: JobDescription) => void;
   currentJD?: JobDescription | null;
+  onSearchTriggered?: (query: string, searchType: "ai_analysis" | "resume_matching") => void;
 }
 
-export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: JobDescriptionUploadProps) {
+export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD, onSearchTriggered }: JobDescriptionUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [textInput, setTextInput] = useState("");
@@ -64,9 +65,15 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
       const result = await response.json();
       onJobDescriptionAnalyzed(result);
       
+      // Auto-trigger search after successful analysis
+      if (onSearchTriggered) {
+        const autoQuery = `Looking for ${result.category} with ${result.experience} experience in ${result.skills.slice(0, 3).join(', ')}`;
+        onSearchTriggered(autoQuery, "ai_analysis");
+      }
+      
       toast({
-        title: "Job Description Analyzed",
-        description: "Successfully extracted skills and requirements from the job description.",
+        title: "Job Description Analyzed & Search Started",
+        description: "Successfully analyzed job description and started searching for matching resumes.",
       });
     } catch (error) {
       console.error('Error analyzing job description:', error);
@@ -110,9 +117,15 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
       const result = await response.json();
       onJobDescriptionAnalyzed(result);
       
+      // Auto-trigger search after successful analysis
+      if (onSearchTriggered) {
+        const autoQuery = `Looking for ${result.category} with ${result.experience} experience in ${result.skills.slice(0, 3).join(', ')}`;
+        onSearchTriggered(autoQuery, "ai_analysis");
+      }
+      
       toast({
-        title: "Job Description Analyzed",
-        description: "Successfully extracted skills and requirements from the job description text.",
+        title: "Job Description Analyzed & Search Started",
+        description: "Successfully analyzed job description and started searching for matching resumes.",
       });
     } catch (error) {
       console.error('Error analyzing job description text:', error);
@@ -196,7 +209,7 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
       <CardHeader>
         <CardTitle className="text-lg">Upload Job Description</CardTitle>
         <p className="text-sm text-gray-600">
-          Upload a PDF, Word document, or paste text to extract required skills and qualifications
+          Upload a PDF, Word document, or paste text to automatically analyze and search for matching resumes
         </p>
       </CardHeader>
       <CardContent>
@@ -234,7 +247,7 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
               <div className="space-y-2">
                 <Upload className="h-8 w-8 text-gray-400 mx-auto" />
                 <div>
-                  <p className="text-sm font-medium">Click to upload job description</p>
+                  <p className="text-sm font-medium">Click to upload job description and search</p>
                   <p className="text-xs text-gray-500">PDF, Word, or text files supported</p>
                 </div>
                 <Button
@@ -245,10 +258,10 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
                   {isUploading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Uploading...
+                      Searching...
                     </>
                   ) : (
-                    "Choose File"
+                    "Choose File & Search"
                   )}
                 </Button>
               </div>
@@ -270,10 +283,10 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Analyzing...
+                    Searching...
                   </>
                 ) : (
-                  "Analyze Text"
+                  "Search Resumes"
                 )}
               </Button>
             </div>
@@ -282,7 +295,7 @@ export function JobDescriptionUpload({ onJobDescriptionAnalyzed, currentJD }: Jo
           {isAnalyzing && (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-6 w-6 animate-spin text-blue-600 mr-2" />
-              <span className="text-sm text-gray-600">Analyzing job description...</span>
+              <span className="text-sm text-gray-600">Analyzing job description and searching resumes...</span>
             </div>
           )}
         </div>

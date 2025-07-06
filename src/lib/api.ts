@@ -728,7 +728,7 @@ export const getUserResumes = async (): Promise<Resume[]> => {
 // Delete a resume by ID
 export async function deleteUserResume(resumeId: string): Promise<boolean> {
   try {
-    const response = await axios.delete(`${API_ENDPOINTS.RESUME.GET_ALL}/user/${resumeId}`, {
+    const response = await axios.delete(`${API_BASE_URL}/api/resumes/${resumeId}`, {
       headers: {
         Authorization: `Bearer ${getToken()}`
       }

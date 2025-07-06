@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { AlertCircle, Check, Clock, Download, FileText, RefreshCw, Upload, X } from "lucide-react";
+import { AlertCircle, Check, Clock, Download, FileText, RefreshCw, Upload, X, Trash2 } from "lucide-react";
 import axios from "axios";
 import { API_ENDPOINTS, API_BASE_URL } from "@/config/api";
 import { formatRelativeDate } from "@/lib/utils";
@@ -177,16 +177,94 @@ const UploadStatusPage = () => {
   };
 
   // Helper function to download resume
-  const downloadResume = (resume: Resume) => {
-    const downloadUrl = `${API_BASE_URL}/resumes/download/${resume.id}`;
-    console.log("Downloading resume from:", downloadUrl);
-    window.open(downloadUrl, "_blank");
+  const downloadResume = async (resume: Resume) => {
+    try {
+      toast({
+        title: "Download Starting",
+        description: `Downloading ${resume.filename}...`,
+      });
+
+      const response = await fetch(`${API_BASE_URL}/api/resumes/download/${resume.id}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+
+      // Get the file blob
+      const blob = await response.blob();
+      
+      // Create a download URL
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = resume.originalName || resume.filename || 'resume.pdf';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download Complete",
+        description: `${resume.originalName || resume.filename} has been downloaded successfully.`,
+      });
+    } catch (error) {
+      console.error('Error downloading resume:', error);
+      toast({
+        variant: "destructive",
+        title: "Download Failed",
+        description: "Failed to download resume. Please try again.",
+      });
+    }
   };
 
   // Helper function to view resume details
   const viewDetails = (resume: Resume) => {
     // Navigate to the resume details page
     navigate(`/resume/${resume.id}`);
+  };
+
+  // Helper function to delete resume
+  const deleteResume = async (resume: Resume) => {
+    if (!window.confirm(`Are you sure you want to delete "${resume.originalName || resume.filename}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/resumes/${resume.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Delete failed: ${response.status} ${response.statusText}`);
+      }
+
+      // Remove the resume from the local state
+      setResumes(prev => prev.filter(r => r.id !== resume.id));
+      
+      toast({
+        title: "Resume Deleted",
+        description: `${resume.originalName || resume.filename} has been deleted successfully.`,
+      });
+    } catch (error) {
+      console.error('Error deleting resume:', error);
+      toast({
+        variant: "destructive",
+        title: "Delete Failed",
+        description: "Failed to delete resume. Please try again.",
+      });
+    }
   };
 
   return (
@@ -309,15 +387,7 @@ const UploadStatusPage = () => {
                           {resume.status === "pending" ? (
                             "Your resume is being processed"
                           ) : (
-                            <>
-                              Match Score: 
-                              <span className={`ml-2 font-bold ${
-                                (resume.match_score || 0) > 70 ? "text-green-400" :
-                                (resume.match_score || 0) > 50 ? "text-yellow-400" : "text-red-400"
-                              }`}>
-                                {resume.match_score !== undefined && resume.match_score !== null ? `${resume.match_score}%` : 'N/A'}
-                              </span>
-                            </>
+                            `Status: ${getStatusText(resume.status)}`
                           )}
                         </p>
                       </div>
@@ -337,6 +407,15 @@ const UploadStatusPage = () => {
                           onClick={() => viewDetails(resume)}
                         >
                           View Details
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs border-white/20 hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-400 transition-colors group"
+                          onClick={() => deleteResume(resume)}
+                          title="Delete resume"
+                        >
+                          <Trash2 className="h-3 w-3 group-hover:text-red-400" />
                         </Button>
                       </div>
                     </div>
