@@ -1,19 +1,37 @@
+# Core FastAPI dependencies
 fastapi==0.95.1
 uvicorn==0.22.0
 python-multipart==0.0.6
-requests==2.29.0
-pyjwt==2.6.0
 pydantic==1.10.7
+python-dotenv==1.0.0
+
+# HTTP clients
+requests==2.29.0
+httpx==0.23.3
+
+# Authentication
+pyjwt==2.6.0
+
+# PDF processing (essential)
 pdfplumber==0.9.0
 PyMuPDF==1.22.3
-python-dotenv==1.0.0
-httpx==0.23.3
-supabase==1.0.3
+
+# Document processing
+python-docx==0.8.11
+
+# Basic ML (lightweight)
 numpy==1.24.3
 scikit-learn==1.2.2
-transformers==4.29.2
-sentence-transformers==2.2.2
-llama-cpp-python==0.2.19
+
+# Database/Storage
+supabase==1.0.3
+
+# Build tools
 setuptools>=65.5.1
 wheel>=0.38.4
-python-docx==0.8.11
+
+# Heavy dependencies - commented out to speed up builds
+# These can be added back if needed for specific features
+# transformers==4.29.2
+# sentence-transformers==2.2.2
+# llama-cpp-python==0.2.19

@@ -1,0 +1,102 @@
+# Frontend files (not needed for backend)
+frontend/
+src/
+public/
+node_modules/
+dist/
+build/
+
+# Development files
+.git/
+.gitignore
+.env.local
+.env.development
+.env.production
+*.env.example
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Test files
+tests/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+.tox/
+
+# Build artifacts
+*.egg-info/
+build/
+dist/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Package manager files
+package.json
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Config files not needed in production
+vite.config.ts
+vite.config.js
+tsconfig.json
+tsconfig.node.json
+postcss.config.js
+tailwind.config.js
+eslint.config.js
+prettier.config.js
+
+# Vercel and deployment files
+.vercel/
+vercel.json
+render.yaml
+
+# Storage files (might be large)
+storage/resumes/
+storage/*.pdf
+storage/*.json
+
+# Python virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Large model files (if any)
+models/
+*.bin
+*.pt
+*.onnx

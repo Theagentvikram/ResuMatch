@@ -1,0 +1,78 @@
+# Cache and build files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+.tox/
+*.egg-info/
+build/
+dist/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+*.env.example
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Version control
+.git/
+.gitignore
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Storage files (can be large)
+storage/resumes/
+storage/*.pdf
+storage/*.json
+
+# Python virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Large model files
+models/
+*.bin
+*.pt
+*.onnx
+
+# Test files
+tests/
+test_*
+*_test.py

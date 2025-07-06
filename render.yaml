@@ -3,9 +3,16 @@ services:
     name: resumatch-backend
     env: docker
     dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     buildCommand: echo "Docker build handled by Render"
     plan: free
     healthCheckPath: /health
+    # Auto deploy only on main branch
+    branch: main
+    # Reduce build timeout
+    buildFilter:
+      paths:
+      - backend/**
     envVars:
       - key: SUPABASE_URL
         sync: false
@@ -20,4 +27,8 @@ services:
       - key: OPENROUTER_MODEL
         value: mistralai/mistral-7b-instruct:free
       - key: PORT
-        value: 8000 
+        value: 8000
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: PYTHONDONTWRITEBYTECODE
+        value: 1 
