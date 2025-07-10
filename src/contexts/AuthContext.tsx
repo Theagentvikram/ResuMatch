@@ -2,7 +2,6 @@ import { createContext, useState, useContext, useEffect, ReactNode } from "react
 import { User } from "@/types";
 import { getUserFromStorage } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
-import { loginUser as mockLoginUser } from "@/lib/mockData";
 
 interface AuthContextType {
   user: User | null;
@@ -21,13 +20,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Check for existing user session on mount
+  // Check for existing user session on mount - but with session timeout
   useEffect(() => {
     const storedUser = getUserFromStorage();
+    const tokenTimestamp = localStorage.getItem("resumatch_token_timestamp");
+    const sessionTimeout = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
     
-    if (storedUser) {
-      setUser(storedUser);
-      setUserType(storedUser.role === "admin" || storedUser.role === "recruiter" ? "recruiter" : "applicant");
+    if (storedUser && tokenTimestamp) {
+      const now = Date.now();
+      const tokenAge = now - parseInt(tokenTimestamp);
+      
+      // If session is older than 4 hours, clear it
+      if (tokenAge > sessionTimeout) {
+        localStorage.removeItem("resumatch_user");
+        localStorage.removeItem("resumatch_token");
+        localStorage.removeItem("resumatch_token_timestamp");
+        setUser(null);
+        setUserType(null);
+      } else {
+        // Valid session
+        setUser(storedUser);
+        setUserType(storedUser.role === "admin" || storedUser.role === "recruiter" ? "recruiter" : "applicant");
+      }
     }
     
     setIsLoading(false);
@@ -41,9 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const type = user.role === "admin" || user.role === "recruiter" ? "recruiter" : "applicant";
     setUserType(type);
     
-    // Save to localStorage
+    // Save to localStorage with timestamp
     localStorage.setItem("resumatch_user", JSON.stringify(user));
     localStorage.setItem("resumatch_token", "mock-token-" + Date.now());
+    localStorage.setItem("resumatch_token_timestamp", Date.now().toString());
   };
 
   const logout = () => {
@@ -53,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Clear from localStorage
     localStorage.removeItem("resumatch_user");
     localStorage.removeItem("resumatch_token");
+    localStorage.removeItem("resumatch_token_timestamp");
     
     toast({
       title: "Logged out",

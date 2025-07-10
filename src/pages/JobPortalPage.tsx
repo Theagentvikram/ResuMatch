@@ -67,7 +67,48 @@ const JobPortalPage: React.FC = () => {
   useEffect(() => {
     loadJobs();
     loadResumes();
+    // Auto-refresh every 30 seconds to keep data fresh
+    const interval = setInterval(() => {
+      loadJobs();
+      loadResumes();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
+
+  // Auto-calculate matches when jobs or resumes change
+  useEffect(() => {
+    if (jobs.length > 0 && resumes.length > 0) {
+      autoCalculateMatches();
+    }
+  }, [jobs, resumes]);
+
+  const autoCalculateMatches = async () => {
+    // Calculate matches for all jobs automatically
+    for (const job of jobs) {
+      if (!matches[job.id]) {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/jobs/${job.id}/match-resumes`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_id: "current-user" }),
+          });
+          
+          if (response.ok) {
+            const matchData = await response.json();
+            setMatches(prev => ({
+              ...prev,
+              [job.id]: matchData
+            }));
+          }
+        } catch (error) {
+          console.error(`Error calculating matches for job ${job.id}:`, error);
+        }
+      }
+    }
+  };
 
   const loadJobs = async () => {
     try {

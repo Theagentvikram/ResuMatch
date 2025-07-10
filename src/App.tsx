@@ -18,7 +18,6 @@ import UploadStatusPage from "./pages/UploadStatusPage";
 import ResumeDetailsPage from "./pages/ResumeDetailsPage";
 import NotFound from "./pages/NotFound";
 import { RecruiterResumesManagementPage } from "./pages/RecruiterResumesManagementPage";
-import SignupPage from "./pages/SignupPage";
 import JobPostingPage from "./pages/JobPostingPage";
 import JobPortalPage from "./pages/JobPortalPage";
 
@@ -36,7 +35,6 @@ const App = () => (
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
               <Route path="/recruiter-login" element={<RecruiterLoginPage />} />
               <Route path="/user-login" element={<UserLoginPage />} />
               
@@ -96,14 +94,6 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredUserType="recruiter">
                     <JobPostingPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/recruiter/jobs" 
-                element={
-                  <ProtectedRoute requiredUserType="recruiter">
-                    <JobPortalPage />
                   </ProtectedRoute>
                 } 
               />

@@ -5,37 +5,93 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { loginUser } from "@/lib/mockData";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
-import { EyeIcon, EyeOffIcon, LogInIcon, UserIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, LogInIcon, Mail, Building } from "lucide-react";
 
 export function RecruiterLoginForm() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Validate company email domain
+  const isValidCompanyEmail = (email: string) => {
+    const companyDomains = [
+      'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+      'icloud.com', 'aol.com', 'protonmail.com', 'mail.com'
+    ];
+    const domain = email.split('@')[1]?.toLowerCase();
+    
+    // For demo purposes, allow some common business domains or non-personal domains
+    if (!domain) return false;
+    
+    // Reject common personal email domains
+    if (companyDomains.includes(domain)) {
+      return false;
+    }
+    
+    // Accept business-looking domains or specific test domains
+    return domain.includes('.') && (
+      domain.includes('corp') || 
+      domain.includes('inc') || 
+      domain.includes('ltd') || 
+      domain.includes('company') ||
+      domain.includes('tech') ||
+      email === 'recruiter@company.com' || // Test account
+      email === 'hr@techcorp.com' // Test account
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
+    // Enhanced validation for recruiters
+    if (!email || !password || !companyName) {
+      toast({
+        title: "Validation Error",
+        description: "All fields are required for recruiter access.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (!isValidCompanyEmail(email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please use a company email address. Personal email domains are not allowed for recruiter accounts.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const user = await loginUser(username, password);
-      if (user && (user.role === "admin" || user.role === "recruiter")) {
+      // For demo purposes, accept specific test credentials or validate email format
+      if ((email === 'recruiter@company.com' || email === 'hr@techcorp.com') && password === 'recruiter123') {
+        const user = {
+          id: '1',
+          username: email.split('@')[0],
+          password: 'hidden', // Required by type but not used in demo
+          role: 'recruiter' as const
+        };
+        
         login(user);
         toast({
           title: "Login successful",
-          description: `Welcome back, ${user.username}!`,
+          description: `Welcome, ${companyName} recruiter!`,
         });
         navigate("/search");
       } else {
         toast({
           title: "Login failed",
-          description: "Invalid credentials or you don't have recruiter access. Try using 'recruiter' with password 'password123'.",
+          description: "Invalid credentials. For demo: use 'recruiter@company.com' or 'hr@techcorp.com' with password 'recruiter123'.",
           variant: "destructive",
         });
       }
@@ -76,21 +132,43 @@ export function RecruiterLoginForm() {
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
-              <Label htmlFor="username" className="flex items-center gap-2">
-                <UserIcon className="h-4 w-4" /> Username
+              <Label htmlFor="company" className="flex items-center gap-2">
+                <Building className="h-4 w-4" /> Company Name
               </Label>
               <div className="relative">
                 <Input
-                  id="username"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="company"
+                  placeholder="Enter your company name"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  className="pl-3 bg-white/50 focus:bg-white transition-all duration-300"
+                  required
+                />
+              </div>
+            </motion.div>
+
+            <motion.div 
+              className="space-y-2"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" /> Company Email
+              </Label>
+              <div className="relative">
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="recruiter@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="pl-3 bg-white/50 focus:bg-white transition-all duration-300"
                   required
                 />
               </div>
               <div className="text-xs text-brand-blue">
-                Demo: Use "recruiter" as username
+                Demo: Use "recruiter@company.com" or "hr@techcorp.com"
               </div>
             </motion.div>
             
@@ -129,7 +207,7 @@ export function RecruiterLoginForm() {
                 </button>
               </div>
               <div className="text-xs text-brand-blue">
-                Demo: Use "password123" as password
+                Demo: Use "recruiter123" as password
               </div>
             </motion.div>
             
