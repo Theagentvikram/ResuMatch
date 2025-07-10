@@ -44,17 +44,12 @@ export function Navbar() {
                   </Link>
                   <Link to="/search?tab=analyze">
                     <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
-                      <BarChart className="h-4 w-4" /> AI Analysis
+                      <BarChart className="h-4 w-4" /> Analysis
                     </Button>
                   </Link>
                   <Link to="/recruiter/post-job">
                     <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
                       <Plus className="h-4 w-4" /> Post Job
-                    </Button>
-                  </Link>
-                  <Link to="/recruiter/jobs">
-                    <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
-                      <Briefcase className="h-4 w-4" /> View Jobs
                     </Button>
                   </Link>
                 </div>
@@ -106,7 +101,7 @@ export function Navbar() {
                       </DropdownMenuItem>
                       <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
                         <Link to="/search?tab=analyze" className="flex items-center w-full">
-                          <BarChart className="h-4 w-4 mr-2" /> AI Resume Analysis
+                          <BarChart className="h-4 w-4 mr-2" /> Resume Analysis
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>

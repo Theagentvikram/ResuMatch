@@ -1,8 +1,8 @@
 import { Layout } from "@/components/Layout";
-import { ApplicantSignupForm } from "@/components/ApplicantSignupForm";
+import { RecruiterSignupForm } from "@/components/RecruiterSignupForm";
 import { motion } from "framer-motion";
 
-export default function SignupPage() {
+export default function RecruiterSignupPage() {
   return (
     <Layout>
       <div className="flex flex-col items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -12,9 +12,9 @@ export default function SignupPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <ApplicantSignupForm />
+          <RecruiterSignupForm />
         </motion.div>
       </div>
     </Layout>
   );
-} 
+}

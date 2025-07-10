@@ -12,6 +12,8 @@ import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import RecruiterLoginPage from "./pages/RecruiterLoginPage";
 import UserLoginPage from "./pages/UserLoginPage";
+import SignupPage from "./pages/SignupPage";
+import RecruiterSignupPage from "./pages/RecruiterSignupPage";
 import UploadPage from "./pages/UploadPage";
 import SearchPage from "./pages/SearchPage";
 import UploadStatusPage from "./pages/UploadStatusPage";
@@ -35,7 +37,9 @@ const App = () => (
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
               <Route path="/recruiter-login" element={<RecruiterLoginPage />} />
+              <Route path="/recruiter-signup" element={<RecruiterSignupPage />} />
               <Route path="/user-login" element={<UserLoginPage />} />
               
               {/* Applicant Routes */}

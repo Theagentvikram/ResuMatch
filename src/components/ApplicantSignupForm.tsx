@@ -5,17 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { loginUser } from "@/lib/mockData";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
-import { EyeIcon, EyeOffIcon, LogInIcon, UserIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, UserPlusIcon, Mail, User } from "lucide-react";
 
-interface LoginFormProps {
-  mode: "login" | "signup";
-}
-
-export function UserLoginForm({ mode = "login" }: LoginFormProps) {
-  const [username, setUsername] = useState("");
+export function ApplicantSignupForm() {
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -26,50 +22,28 @@ export function UserLoginForm({ mode = "login" }: LoginFormProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const user = await loginUser(username, password);
-      if (user && user.role !== "admin") {
-        login(user);
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${user.username}!`,
-        });
-        navigate("/upload-status");
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid credentials or you don't have applicant access. Please check your email and password, or sign up if you don't have an account.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Login error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!username || !password || !confirmPassword) {
+    
+    if (!email || !fullName || !password || !confirmPassword) {
       setError("All fields are required.");
       return;
     }
+    
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
+    
     if (password.length < 6) {
       setError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
       return;
     }
     
@@ -78,17 +52,18 @@ export function UserLoginForm({ mode = "login" }: LoginFormProps) {
       // Create a new user account (for demo purposes)
       const newUser = {
         id: Date.now().toString(),
-        username: username,
+        username: email, // Use email as username for consistency
         password: password, // In real app, this would be hashed
-        role: 'applicant' as const
+        role: 'applicant' as const,
+        fullName: fullName
       };
       
       // Save to localStorage (in real app, this would be an API call)
       const existingUsers = JSON.parse(localStorage.getItem("resumatch_users") || "[]");
       
-      // Check if username already exists
-      if (existingUsers.some((user: any) => user.username === username)) {
-        setError("Username already exists. Please choose a different one.");
+      // Check if email already exists
+      if (existingUsers.some((user: any) => user.username === email)) {
+        setError("An account with this email already exists. Please use a different email or login instead.");
         return;
       }
       
@@ -98,7 +73,7 @@ export function UserLoginForm({ mode = "login" }: LoginFormProps) {
       setSuccess(true);
       toast({
         title: "Account created successfully!",
-        description: "You can now login with your credentials.",
+        description: "Welcome to ResuMatch! You can now upload and manage your resume.",
       });
       
       // Auto-login the user after successful signup
@@ -133,54 +108,68 @@ export function UserLoginForm({ mode = "login" }: LoginFormProps) {
       <Card className="w-full backdrop-blur-sm bg-white/90 shadow-xl border-t border-l border-white/20">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">
-            {mode === "login" ? "Applicant Login" : "Sign Up for ResuMatch"}
+            Create Your ResuMatch Account
           </CardTitle>
           <CardDescription className="text-center">
-            {mode === "login" 
-              ? "Enter your credentials to upload and track your resume"
-              : "Create your account to access the resume search platform"
-            }
+            Join thousands of job seekers finding their perfect match
           </CardDescription>
         </CardHeader>
         <CardContent>
           {success ? (
             <div className="text-center text-green-600 font-semibold py-8">
-              {mode === "signup" ? "Account created successfully! Logging you in..." : "Login successful!"}
+              Account created successfully! Logging you in...
             </div>
           ) : (
-            <form onSubmit={mode === "login" ? handleLogin : handleSignup} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <motion.div 
                 className="space-y-2"
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.3, delay: 0.1 }}
               >
-                <Label htmlFor="username" className="flex items-center gap-2">
-                  <UserIcon className="h-4 w-4" /> {mode === "login" ? "Username" : "Email"}
+                <Label htmlFor="fullName" className="flex items-center gap-2">
+                  <User className="h-4 w-4" /> Full Name
                 </Label>
                 <div className="relative">
                   <Input
-                    id="username"
-                    type={mode === "signup" ? "email" : "text"}
-                    placeholder={mode === "login" ? "Enter your username" : "Enter your email"}
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="fullName"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     className="pl-3 bg-white/50 focus:bg-white transition-all duration-300"
                     required
                   />
                 </div>
-                {mode === "login" && (
-                  <div className="text-xs text-brand-blue">
-                    Demo: Use "user" as username
-                  </div>
-                )}
+              </motion.div>
+
+              <motion.div 
+                className="space-y-2"
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" /> Email Address
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-3 bg-white/50 focus:bg-white transition-all duration-300"
+                    required
+                  />
+                </div>
               </motion.div>
               
               <motion.div 
                 className="space-y-2"
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
               >
                 <Label htmlFor="password" className="flex items-center gap-2">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -192,7 +181,7 @@ export function UserLoginForm({ mode = "login" }: LoginFormProps) {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder="Create a secure password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pr-10 bg-white/50 focus:bg-white transition-all duration-300"
@@ -210,52 +199,48 @@ export function UserLoginForm({ mode = "login" }: LoginFormProps) {
                     )}
                   </button>
                 </div>
-                {mode === "login" && (
-                  <div className="text-xs text-brand-blue">
-                    Demo: Use "password123" as password
-                  </div>
-                )}
+                <div className="text-xs text-gray-500">
+                  Password must be at least 6 characters long
+                </div>
               </motion.div>
               
-              {mode === "signup" && (
-                <motion.div 
-                  className="space-y-2"
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                >
-                  <Label htmlFor="confirmPassword" className="flex items-center gap-2">
-                    Confirm Password
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Confirm your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pr-10 bg-white/50 focus:bg-white transition-all duration-300"
-                      required
-                    />
-                  </div>
-                </motion.div>
-              )}
+              <motion.div 
+                className="space-y-2"
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
+              >
+                <Label htmlFor="confirmPassword" className="flex items-center gap-2">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pr-10 bg-white/50 focus:bg-white transition-all duration-300"
+                    required
+                  />
+                </div>
+              </motion.div>
               
               {error && <div className="text-red-500 text-sm text-center">{error}</div>}
               
               <motion.div 
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.3 }}
+                transition={{ duration: 0.4, delay: 0.5 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 <Button 
                   type="submit" 
-                  className={`w-full gap-2 ${mode === "login" 
-                    ? "bg-gradient-to-r from-purple-500 to-purple-700" 
-                    : "bg-gradient-to-r from-blue-600 to-blue-800"} 
-                    hover:opacity-90 transition-all duration-300`}
+                  className="w-full gap-2 bg-gradient-to-r from-blue-600 to-blue-800 hover:opacity-90 transition-all duration-300"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -264,15 +249,11 @@ export function UserLoginForm({ mode = "login" }: LoginFormProps) {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      {mode === "login" ? "Logging in..." : "Signing up..."}
+                      Creating Account...
                     </>
                   ) : (
                     <>
-                      {mode === "login" ? (
-                        <><LogInIcon className="h-4 w-4" /> Login as Applicant</>
-                      ) : (
-                        <>Sign Up</>
-                      )}
+                      <UserPlusIcon className="h-4 w-4" /> Create Account
                     </>
                   )}
                 </Button>
@@ -285,36 +266,25 @@ export function UserLoginForm({ mode = "login" }: LoginFormProps) {
             className="text-sm text-muted-foreground"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
           >
-            {mode === "login" ? (
-              <>
-                Don't have an account?{' '}
-                <span className="text-blue-500 hover:underline cursor-pointer" onClick={() => navigate('/signup')}>
-                  Sign Up
-                </span>
-              </>
-            ) : (
-              <>
-                Already have an account?{' '}
-                <span className="text-blue-500 hover:underline cursor-pointer" onClick={() => navigate('/user-login')}>
-                  Login
-                </span>
-              </>
-            )}
+            Already have an account?{' '}
+            <span className="text-blue-500 hover:underline cursor-pointer" onClick={() => navigate('/user-login')}>
+              Login here
+            </span>
           </motion.p>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
+            transition={{ delay: 0.7, duration: 0.5 }}
           >
             <Button 
               variant="ghost" 
               size="sm" 
-              className={mode === "login" ? "text-purple-500 w-full" : "text-blue-500 w-full"}
-              onClick={() => navigate(mode === "login" ? "/recruiter-login" : "/user-login")}
+              className="text-purple-500 w-full"
+              onClick={() => navigate("/recruiter-login")}
             >
-              {mode === "login" ? "Switch to Recruiter Login" : "Switch to Login"}
+              Are you a recruiter? Login here
             </Button>
           </motion.div>
         </CardFooter>

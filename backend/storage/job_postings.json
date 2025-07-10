@@ -1,6 +1,6 @@
 [
   {
-    "id": "30593ed2-4bc5-426d-8677-94af5dcd2759",
+    "id": "45d9a4b5-75d3-43fa-9b87-94d0b8ea1b3d",
     "title": "Senior Python Developer",
     "company": "TechCorp Solutions",
     "location": "San Francisco, CA",
@@ -34,11 +34,11 @@
       "Flexible Hours"
     ],
     "applicationDeadline": "2025-08-15",
-    "postedDate": "2025-07-06T15:20:39.174993",
+    "postedDate": "2025-07-11T00:27:53.756244",
     "status": "Active"
   },
   {
-    "id": "734a01e6-a12e-44f1-9ad1-a94b2daaddee",
+    "id": "00972fe2-ad3e-4369-8a21-c686e8834467",
     "title": "Data Scientist - Machine Learning",
     "company": "AI Innovations Inc",
     "location": "Boston, MA",
@@ -72,11 +72,11 @@
       "Flexible PTO"
     ],
     "applicationDeadline": "2025-07-30",
-    "postedDate": "2025-07-06T15:20:39.175040",
+    "postedDate": "2025-07-11T00:27:53.756262",
     "status": "Active"
   },
   {
-    "id": "cb6d7726-4d68-4fbe-ac9e-8e80debf3d53",
+    "id": "50c2bc76-5759-413b-b1e2-000ba90a44b5",
     "title": "Frontend React Developer",
     "company": "StartupXYZ",
     "location": "Remote",
@@ -110,55 +110,201 @@
       "Professional Development"
     ],
     "applicationDeadline": "2025-08-01",
-    "postedDate": "2025-07-06T15:20:39.175046",
+    "postedDate": "2025-07-11T00:27:53.756267",
     "status": "Active"
   },
   {
-    "id": "7402fc28-dfbb-4b9b-9e99-204bc67c3545",
-    "title": "Blogger",
-    "company": "Techabhee",
-    "location": "klr 258, kodad ",
+    "id": "4dd9af83-9a06-4429-b06b-5427ecdc1316",
+    "title": "DevOps Engineer - Site Reliability",
+    "company": "CloudScale Technologies",
+    "location": "Seattle, WA",
     "jobType": "Full-time",
     "experienceLevel": "Mid Level",
-    "description": "Python Senior developer",
-    "requirements": [],
-    "skills": [],
-    "salary": "$120000 - $150000",
-    "benefits": [],
-    "applicationDeadline": "2025-07-24",
-    "postedDate": "2025-07-06T15:36:11.350383",
+    "description": "We're looking for a DevOps Engineer to maintain and improve our infrastructure. You'll work with CI/CD pipelines, Kubernetes, and cloud platforms to ensure high availability and scalability.",
+    "requirements": [
+      "2+ years of DevOps or SRE experience",
+      "Experience with Kubernetes and Docker",
+      "Proficiency in cloud platforms (AWS, GCP, Azure)",
+      "Knowledge of CI/CD tools (Jenkins, GitLab CI)",
+      "Experience with infrastructure as code (Terraform, Ansible)",
+      "Strong Linux/Unix system administration skills"
+    ],
+    "skills": [
+      "Kubernetes",
+      "Docker",
+      "AWS",
+      "GCP",
+      "Azure",
+      "Jenkins",
+      "Terraform",
+      "Ansible",
+      "Linux",
+      "Git",
+      "Prometheus",
+      "Grafana",
+      "ELK"
+    ],
+    "salary": "$95,000 - $125,000",
+    "benefits": [
+      "Health Insurance",
+      "Stock Options",
+      "Remote Work",
+      "On-call Compensation"
+    ],
+    "applicationDeadline": "2025-08-10",
+    "postedDate": "2025-07-11T00:27:53.756277",
     "status": "Active"
   },
   {
-    "id": "87d15208-fd7f-46a7-a324-4ae354cc0e93",
-    "title": "Blogger",
-    "company": "Techabhee",
-    "location": "klr 258, kodad ",
+    "id": "4f9a3177-1e22-4f31-bd25-0e53ea9598ca",
+    "title": "Full Stack Java Developer",
+    "company": "Enterprise Solutions Ltd",
+    "location": "New York, NY",
     "jobType": "Full-time",
     "experienceLevel": "Mid Level",
-    "description": "asd",
-    "requirements": [],
-    "skills": [],
-    "salary": "232",
-    "benefits": [],
+    "description": "Join our team to develop enterprise-grade Java applications. You'll work on both backend services and web applications, collaborating with cross-functional teams to deliver robust solutions.",
+    "requirements": [
+      "3+ years of Java development experience",
+      "Experience with Spring Framework (Spring Boot, Spring MVC)",
+      "Knowledge of web technologies (HTML, CSS, JavaScript)",
+      "Experience with databases (SQL, ORM frameworks)",
+      "Familiarity with microservices architecture",
+      "Bachelor's degree in Computer Science"
+    ],
+    "skills": [
+      "Core Java",
+      "Spring Boot",
+      "Spring MVC",
+      "JavaScript",
+      "HTML",
+      "CSS",
+      "SQL",
+      "Git",
+      "REST API",
+      "Microservices"
+    ],
+    "salary": "$90,000 - $115,000",
+    "benefits": [
+      "Health Insurance",
+      "401k",
+      "Paid Training",
+      "Career Development"
+    ],
+    "applicationDeadline": "2025-08-05",
+    "postedDate": "2025-07-11T00:27:53.756281",
+    "status": "Active"
+  },
+  {
+    "id": "4b58b329-0d0d-4e9c-aaca-a28132f1bd47",
+    "title": "iOS Swift Developer",
+    "company": "Mobile Innovations Corp",
+    "location": "Austin, TX",
+    "jobType": "Full-time",
+    "experienceLevel": "Entry Level",
+    "description": "We're seeking a passionate iOS developer to create innovative mobile applications. You'll work with SwiftUI and UIKit to build user-friendly apps for millions of users.",
+    "requirements": [
+      "1+ years of iOS development experience",
+      "Proficiency in Swift and SwiftUI",
+      "Understanding of iOS SDK and development tools",
+      "Experience with version control systems",
+      "Knowledge of RESTful APIs and JSON",
+      "Portfolio of iOS apps preferred"
+    ],
+    "skills": [
+      "Swift",
+      "SwiftUI",
+      "iOS SDK",
+      "Xcode",
+      "Git",
+      "REST API",
+      "JSON",
+      "UIKit"
+    ],
+    "salary": "$70,000 - $90,000",
+    "benefits": [
+      "Health Insurance",
+      "Flexible Hours",
+      "Learning Budget",
+      "Team Events"
+    ],
     "applicationDeadline": "2025-07-25",
-    "postedDate": "2025-07-06T15:47:27.121207",
+    "postedDate": "2025-07-11T00:27:53.756284",
     "status": "Active"
   },
   {
-    "id": "b4128e10-ca05-415f-b63f-deff7cf7a52c",
-    "title": "Blogger",
-    "company": "Techabhee",
-    "location": "klr 258, kodad ",
+    "id": "e3882df1-80f2-48f7-9b72-3bbe8b953eac",
+    "title": "AI/ML Engineer - GenAI",
+    "company": "Future AI Labs",
+    "location": "San Jose, CA",
     "jobType": "Full-time",
     "experienceLevel": "Senior Level",
-    "description": "Python Senior Developer",
-    "requirements": [],
-    "skills": [],
-    "salary": "12400 - 243435",
-    "benefits": [],
-    "applicationDeadline": "2025-07-30",
-    "postedDate": "2025-07-06T16:42:02.340671",
+    "description": "Lead the development of next-generation AI applications using Large Language Models and Generative AI. You'll work on cutting-edge projects involving LLMs, agentic AI systems, and AI-powered solutions.",
+    "requirements": [
+      "4+ years of ML/AI experience",
+      "Experience with LLMs and Generative AI",
+      "Proficiency in Python and ML frameworks",
+      "Knowledge of transformer architectures",
+      "Experience with cloud ML platforms",
+      "PhD in AI/ML or equivalent experience"
+    ],
+    "skills": [
+      "Python",
+      "Machine Learning",
+      "Gen AI",
+      "LLMs",
+      "Agentic AI",
+      "TensorFlow",
+      "PyTorch",
+      "Transformers",
+      "AWS",
+      "GCP"
+    ],
+    "salary": "$140,000 - $180,000",
+    "benefits": [
+      "Stock Options",
+      "Health Insurance",
+      "Research Budget",
+      "Conference Attendance"
+    ],
+    "applicationDeadline": "2025-08-20",
+    "postedDate": "2025-07-11T00:27:53.756288",
+    "status": "Active"
+  },
+  {
+    "id": "86e3bcb3-7ba2-446b-8789-0a479892ac32",
+    "title": "Content Writer & SEO Specialist",
+    "company": "Digital Marketing Pro",
+    "location": "Remote",
+    "jobType": "Full-time",
+    "experienceLevel": "Mid Level",
+    "description": "Create engaging, SEO-optimized content for various digital platforms. You'll develop content strategies, write blog posts, and optimize content for search engines to drive organic traffic.",
+    "requirements": [
+      "2+ years of content writing experience",
+      "Strong SEO knowledge and experience",
+      "Excellent writing and communication skills",
+      "Experience with content management systems",
+      "Knowledge of digital marketing principles",
+      "Portfolio of published content required"
+    ],
+    "skills": [
+      "Content Writing",
+      "SEO Optimization",
+      "Digital Marketing",
+      "Blogging",
+      "Communication Skills",
+      "Email Marketing",
+      "WordPress",
+      "Google Analytics"
+    ],
+    "salary": "$50,000 - $70,000",
+    "benefits": [
+      "Remote Work",
+      "Health Insurance",
+      "Flexible Schedule",
+      "Professional Development"
+    ],
+    "applicationDeadline": "2025-07-28",
+    "postedDate": "2025-07-11T00:27:53.756292",
     "status": "Active"
   }
 ]

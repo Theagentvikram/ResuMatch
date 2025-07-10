@@ -1,11 +1,11 @@
 
 import { Layout } from "@/components/Layout";
-import { UserLoginForm } from "@/components/UserLoginForm";
+import { ApplicantLoginForm } from "@/components/ApplicantLoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FileText, Upload, Shield, Eye, UserCheck } from "lucide-react";
+import { Upload, Shield, Eye } from "lucide-react";
 
 const UserLoginPage = () => {
   const { isAuthenticated, userType } = useAuth();
@@ -112,7 +112,7 @@ const UserLoginPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <UserLoginForm />
+          <ApplicantLoginForm />
         </motion.div>
       </div>
     </Layout>

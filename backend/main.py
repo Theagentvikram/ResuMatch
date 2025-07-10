@@ -31,7 +31,7 @@ from services.embedding_service import get_embedding, calculate_similarity
 from services.storage_service import upload_to_storage, get_download_url, LOCAL_STORAGE_DIR
 from services.database_service import save_resume_to_db, get_resumes, search_resumes
 from services.regex_service import analyze_resume_with_regex
-from services.openrouter_service import get_relevance_score_with_openrouter
+from services.openrouter_service import analyze_resume_with_openrouter, get_openrouter_model_status, get_openrouter_response, get_relevance_score_with_openrouter
 
 # Import persistent storage service
 try:
@@ -1489,7 +1489,7 @@ async def get_job_by_id(job_id: str):
 @app.post("/api/jobs/{job_id}/match-resumes", response_model=List[ResumeJobMatch])
 async def match_resumes_to_job(job_id: str):
     """
-    Find matching resumes for a specific job posting
+    Find matching resumes for a specific job posting using enhanced AI analysis
     """
     try:
         # Find the job
@@ -1503,62 +1503,149 @@ async def match_resumes_to_job(job_id: str):
         
         if not USER_RESUMES:
             return []
-        
+
         matches = []
         job_skills = job.get("skills", [])
         job_description = f"{job.get('title', '')} {job.get('description', '')}"
         
         for resume in USER_RESUMES:
             resume_skills = resume.get("skills", [])
+            resume_summary = resume.get("summary", "")
             
-            # Calculate matching and missing skills
+            # Enhanced skill matching with semantic similarity
             matching_skills = []
+            skill_match_scores = {}
+            
             for job_skill in job_skills:
+                best_match_score = 0
+                best_match_skill = None
+                
                 for resume_skill in resume_skills:
-                    if job_skill.lower() in resume_skill.lower() or resume_skill.lower() in job_skill.lower():
+                    # Exact match
+                    if job_skill.lower() == resume_skill.lower():
                         matching_skills.append(job_skill)
+                        skill_match_scores[job_skill] = 1.0
                         break
+                    # Partial match
+                    elif job_skill.lower() in resume_skill.lower() or resume_skill.lower() in job_skill.lower():
+                        match_score = max(len(job_skill.lower()), len(resume_skill.lower())) / min(len(job_skill.lower()), len(resume_skill.lower()))
+                        if match_score > best_match_score:
+                            best_match_score = match_score
+                            best_match_skill = job_skill
+                
+                if best_match_skill and best_match_skill not in matching_skills:
+                    matching_skills.append(best_match_skill)
+                    skill_match_scores[best_match_skill] = best_match_score
             
             missing_skills = [skill for skill in job_skills if skill not in matching_skills]
             
-            # Calculate match score (percentage of job skills found in resume)
-            if job_skills:
-                match_score = int((len(matching_skills) / len(job_skills)) * 100)
-            else:
-                match_score = 0
+            # Calculate enhanced match score
+            skill_score = (len(matching_skills) / len(job_skills)) * 100 if job_skills else 0
             
-            # Generate suggestions using AI or rule-based approach
+            # Use AI for better assessment if available
+            overall_assessment = ""
             suggestions = []
-            if missing_skills:
-                suggestions.append(f"Consider adding skills: {', '.join(missing_skills[:3])}")
-            if len(matching_skills) > 0:
-                suggestions.append(f"Strong match in: {', '.join(matching_skills[:3])}")
             
-            # Generate overall assessment
-            if match_score >= 80:
-                assessment = "Excellent match - highly recommended"
-            elif match_score >= 60:
-                assessment = "Good match - recommended with some skill development"
-            elif match_score >= 40:
-                assessment = "Moderate match - significant skill gaps to address"
-            else:
-                assessment = "Low match - major skill development needed"
+            if OPENROUTER_API_AVAILABLE:
+                try:
+                    # Simplified and more focused AI prompt
+                    ai_prompt = f"""You are an expert career coach. Analyze this resume match and provide a helpful assessment.
+
+Job: {job.get('title')} at {job.get('company')}
+Required Skills: {', '.join(job_skills[:5])}
+Your Skills: {', '.join(resume_skills[:8])}
+Your Matching Skills: {', '.join(matching_skills)}
+Missing Skills: {', '.join(missing_skills[:3])}
+
+Provide a brief, encouraging assessment (1-2 sentences) using "you" language. Focus on strengths and realistic next steps."""
+
+                    print(f"Sending AI prompt for resume {resume['id']}: {ai_prompt[:200]}...")
+                    ai_response = await get_openrouter_response(ai_prompt)
+                    print(f"Received AI response: '{ai_response}'")
+                    
+                    # Clean and validate AI response
+                    if ai_response and len(ai_response.strip()) > 10:
+                        # Clean up the response
+                        overall_assessment = ai_response.strip()
+                        
+                        # Remove common prefixes/artifacts
+                        prefixes_to_remove = ["ASSESSMENT:", "Assessment:", "Response:", "Dear", "Hello"]
+                        for prefix in prefixes_to_remove:
+                            if overall_assessment.startswith(prefix):
+                                overall_assessment = overall_assessment[len(prefix):].strip()
+                                if overall_assessment.startswith(",") or overall_assessment.startswith(":"):
+                                    overall_assessment = overall_assessment[1:].strip()
+                        
+                        # Take only the first meaningful sentence(s)
+                        sentences = [s.strip() for s in overall_assessment.split('.') if s.strip()]
+                        if len(sentences) >= 2:
+                            overall_assessment = f"{sentences[0]}. {sentences[1]}."
+                        elif len(sentences) == 1:
+                            overall_assessment = f"{sentences[0]}."
+                        
+                        # Ensure proper pronoun usage
+                        replacements = [
+                            ("The candidate", "You"),
+                            ("the candidate", "you"),
+                            ("The applicant", "You"),
+                            ("the applicant", "you"),
+                            ("This candidate", "You"),
+                            ("this candidate", "you")
+                        ]
+                        for old, new in replacements:
+                            overall_assessment = overall_assessment.replace(old, new)
+                        
+                        # Validate the assessment is meaningful
+                        if len(overall_assessment) < 20 or "Dear" in overall_assessment:
+                            print(f"AI response too short or contains greeting: '{overall_assessment}'")
+                            overall_assessment = ""  # Force fallback
+                    else:
+                        print(f"AI response invalid or too short: '{ai_response}'")
+                        overall_assessment = ""
+                
+                except Exception as e:
+                    print(f"AI analysis failed for resume {resume['id']}: {str(e)}")
+                    overall_assessment = ""
+            
+            # Enhanced fallback assessment with specific skill analysis
+            if not overall_assessment:
+                if skill_score >= 80:
+                    strength_skills = ', '.join(matching_skills[:3])
+                    overall_assessment = f"You have an excellent match for this role with strong skills in {strength_skills}. Highly recommended to apply!"
+                elif skill_score >= 60:
+                    strength_skills = ', '.join(matching_skills[:2]) if matching_skills else "relevant areas"
+                    gap_skills = ', '.join(missing_skills[:2]) if missing_skills else "some technical areas"
+                    overall_assessment = f"You have a solid foundation with experience in {strength_skills}, though developing skills in {gap_skills} would strengthen your application."
+                elif skill_score >= 40:
+                    if matching_skills:
+                        overall_assessment = f"You show potential with relevant experience in {', '.join(matching_skills[:2])}, but would benefit from building skills in {', '.join(missing_skills[:2])} to be more competitive."
+                    else:
+                        overall_assessment = f"This role requires development in key areas like {', '.join(missing_skills[:3])}, but your background provides a foundation to build upon."
+                else:
+                    overall_assessment = f"This position has significant skill gaps including {', '.join(missing_skills[:3])}, but consider it as a growth opportunity to develop these in-demand technologies."
+            
+            if not suggestions:
+                if missing_skills:
+                    suggestions.append(f"Consider learning these key skills: {', '.join(missing_skills[:3])}")
+                if len(matching_skills) > 0:
+                    suggestions.append(f"Your strong match areas: {', '.join(matching_skills[:3])}")
+                suggestions.append("Tailor your resume summary to include more job description keywords")
             
             match = {
                 "jobId": job_id,
                 "resumeId": resume["id"],
-                "matchScore": match_score,
+                "matchScore": int(skill_score),
                 "matchingSkills": matching_skills,
                 "missingSkills": missing_skills,
-                "suggestions": suggestions,
-                "overallAssessment": assessment
+                "suggestions": suggestions[:4],  # Limit to top 4
+                "overallAssessment": overall_assessment
             }
             matches.append(match)
         
         # Sort by match score (highest first)
         matches.sort(key=lambda x: x["matchScore"], reverse=True)
         
-        print(f"Found {len(matches)} resume matches for job {job['title']}")
+        print(f"Found {len(matches)} resume matches for job {job['title']} (AI-enhanced: {OPENROUTER_API_AVAILABLE})")
         return matches
         
     except HTTPException:
@@ -1627,29 +1714,68 @@ async def get_personalized_suggestions(resume_id: str, job_id: str = Body(..., e
         recommendations = []
         if OPENROUTER_API_AVAILABLE:
             try:
-                prompt = f"""As a career advisor, provide 3-4 specific recommendations for improving this resume for the job posting:
+                prompt = f"""As an expert career advisor, provide specific, actionable recommendations for improving this resume for the job posting:
 
-JOB: {job.get('title')} at {job.get('company')}
-JOB SKILLS REQUIRED: {', '.join(job_skills)}
-RESUME SKILLS: {', '.join(resume_skills)}
-MISSING SKILLS: {', '.join(skills_to_add)}
+JOB POSTING:
+Title: {job.get('title')} at {job.get('company')}
+Required Skills: {', '.join(job_skills)}
+Experience Level: {job.get('experienceLevel', 'Not specified')}
+Job Description: {job.get('description', '')[:300]}
 
-Provide specific, actionable advice in bullet points."""
+CURRENT RESUME:
+Skills: {', '.join(resume_skills)}
+Experience: {resume.get('experience', 'Not specified')} years
+Category: {resume.get('category', 'Not specified')}
+Summary: {resume.get('summary', '')[:300]}
 
-                ai_recommendations = await get_openrouter_completion(prompt)
-                recommendations = [rec.strip() for rec in ai_recommendations.split('\n') if rec.strip() and not rec.strip().startswith('#')]
-            except:
-                pass
-        
-        # Fallback recommendations
+ANALYSIS:
+Missing Skills: {', '.join(skills_to_add)}
+Skills to Consider Removing: {', '.join(skills_to_remove)}
+
+Please provide:
+1. Top 3-4 specific skills to add with learning recommendations
+2. 2-3 actionable resume improvements
+3. Experience gap analysis if applicable
+
+Format as clear bullet points."""
+
+                ai_recommendations = await get_openrouter_response(prompt)
+                
+                # Parse and clean recommendations
+                lines = ai_recommendations.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line.startswith(('•', '-', '*')) or (line and not line.startswith('#')):
+                        cleaned_line = line.lstrip('•-* ').strip()
+                        if cleaned_line and len(cleaned_line) > 10:  # Filter out very short lines
+                            recommendations.append(cleaned_line)
+                
+                # Limit to top recommendations
+                recommendations = recommendations[:5]
+                
+            except Exception as e:
+                print(f"AI recommendation generation failed: {str(e)}")
+                
+        # Enhanced fallback recommendations
         if not recommendations:
             if skills_to_add:
-                recommendations.append(f"Learn and add these key skills: {', '.join(skills_to_add[:3])}")
+                recommendations.append(f"Priority skills to learn: {', '.join(skills_to_add[:3])}. Consider online courses on platforms like Coursera, Udemy, or free resources.")
             if skills_to_remove:
-                recommendations.append(f"Consider removing less relevant skills: {', '.join(skills_to_remove[:2])}")
+                recommendations.append(f"Consider removing less relevant skills: {', '.join(skills_to_remove[:2])} to focus on job-specific competencies.")
             if experience_gap:
-                recommendations.append("Highlight relevant projects and responsibilities to demonstrate experience level")
-            recommendations.append("Tailor your resume summary to match the job description keywords")
+                recommendations.append("Highlight relevant projects, internships, or coursework to demonstrate practical experience in your target role.")
+            
+            # Add specific suggestions based on missing skills
+            for skill in skills_to_add[:2]:
+                if skill.lower() in ['python', 'javascript', 'java', 'c++']:
+                    recommendations.append(f"For {skill}: Build projects showcasing your skills and add them to GitHub with detailed documentation.")
+                elif skill.lower() in ['machine learning', 'ai', 'data science']:
+                    recommendations.append(f"For {skill}: Complete Kaggle competitions or create data analysis projects to demonstrate practical experience.")
+                elif skill.lower() in ['aws', 'azure', 'cloud']:
+                    recommendations.append(f"For {skill}: Earn relevant cloud certifications and mention them prominently in your skills section.")
+            
+            recommendations.append("Customize your resume summary to include keywords from the job description to pass ATS systems.")
+            recommendations.append("Quantify your achievements with specific metrics and numbers wherever possible.")
         
         suggestion = {
             "resumeId": resume_id,
@@ -1739,6 +1865,121 @@ def create_sample_jobs():
                 "salary": "$85,000 - $110,000",
                 "benefits": ["Remote Work", "Health Insurance", "Equity", "Professional Development"],
                 "applicationDeadline": "2025-08-01",
+                "postedDate": datetime.now().isoformat(),
+                "status": "Active"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "DevOps Engineer - Site Reliability",
+                "company": "CloudScale Technologies",
+                "location": "Seattle, WA",
+                "jobType": "Full-time",
+                "experienceLevel": "Mid Level",
+                "description": "We're looking for a DevOps Engineer to maintain and improve our infrastructure. You'll work with CI/CD pipelines, Kubernetes, and cloud platforms to ensure high availability and scalability.",
+                "requirements": [
+                    "2+ years of DevOps or SRE experience",
+                    "Experience with Kubernetes and Docker",
+                    "Proficiency in cloud platforms (AWS, GCP, Azure)",
+                    "Knowledge of CI/CD tools (Jenkins, GitLab CI)",
+                    "Experience with infrastructure as code (Terraform, Ansible)",
+                    "Strong Linux/Unix system administration skills"
+                ],
+                "skills": ["Kubernetes", "Docker", "AWS", "GCP", "Azure", "Jenkins", "Terraform", "Ansible", "Linux", "Git", "Prometheus", "Grafana", "ELK"],
+                "salary": "$95,000 - $125,000",
+                "benefits": ["Health Insurance", "Stock Options", "Remote Work", "On-call Compensation"],
+                "applicationDeadline": "2025-08-10",
+                "postedDate": datetime.now().isoformat(),
+                "status": "Active"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Full Stack Java Developer",
+                "company": "Enterprise Solutions Ltd",
+                "location": "New York, NY",
+                "jobType": "Full-time",
+                "experienceLevel": "Mid Level",
+                "description": "Join our team to develop enterprise-grade Java applications. You'll work on both backend services and web applications, collaborating with cross-functional teams to deliver robust solutions.",
+                "requirements": [
+                    "3+ years of Java development experience",
+                    "Experience with Spring Framework (Spring Boot, Spring MVC)",
+                    "Knowledge of web technologies (HTML, CSS, JavaScript)",
+                    "Experience with databases (SQL, ORM frameworks)",
+                    "Familiarity with microservices architecture",
+                    "Bachelor's degree in Computer Science"
+                ],
+                "skills": ["Core Java", "Spring Boot", "Spring MVC", "JavaScript", "HTML", "CSS", "SQL", "Git", "REST API", "Microservices"],
+                "salary": "$90,000 - $115,000",
+                "benefits": ["Health Insurance", "401k", "Paid Training", "Career Development"],
+                "applicationDeadline": "2025-08-05",
+                "postedDate": datetime.now().isoformat(),
+                "status": "Active"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "iOS Swift Developer",
+                "company": "Mobile Innovations Corp",
+                "location": "Austin, TX",
+                "jobType": "Full-time",
+                "experienceLevel": "Entry Level",
+                "description": "We're seeking a passionate iOS developer to create innovative mobile applications. You'll work with SwiftUI and UIKit to build user-friendly apps for millions of users.",
+                "requirements": [
+                    "1+ years of iOS development experience",
+                    "Proficiency in Swift and SwiftUI",
+                    "Understanding of iOS SDK and development tools",
+                    "Experience with version control systems",
+                    "Knowledge of RESTful APIs and JSON",
+                    "Portfolio of iOS apps preferred"
+                ],
+                "skills": ["Swift", "SwiftUI", "iOS SDK", "Xcode", "Git", "REST API", "JSON", "UIKit"],
+                "salary": "$70,000 - $90,000",
+                "benefits": ["Health Insurance", "Flexible Hours", "Learning Budget", "Team Events"],
+                "applicationDeadline": "2025-07-25",
+                "postedDate": datetime.now().isoformat(),
+                "status": "Active"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "AI/ML Engineer - GenAI",
+                "company": "Future AI Labs",
+                "location": "San Jose, CA",
+                "jobType": "Full-time",
+                "experienceLevel": "Senior Level",
+                "description": "Lead the development of next-generation AI applications using Large Language Models and Generative AI. You'll work on cutting-edge projects involving LLMs, agentic AI systems, and AI-powered solutions.",
+                "requirements": [
+                    "4+ years of ML/AI experience",
+                    "Experience with LLMs and Generative AI",
+                    "Proficiency in Python and ML frameworks",
+                    "Knowledge of transformer architectures",
+                    "Experience with cloud ML platforms",
+                    "PhD in AI/ML or equivalent experience"
+                ],
+                "skills": ["Python", "Machine Learning", "Gen AI", "LLMs", "Agentic AI", "TensorFlow", "PyTorch", "Transformers", "AWS", "GCP"],
+                "salary": "$140,000 - $180,000",
+                "benefits": ["Stock Options", "Health Insurance", "Research Budget", "Conference Attendance"],
+                "applicationDeadline": "2025-08-20",
+                "postedDate": datetime.now().isoformat(),
+                "status": "Active"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Content Writer & SEO Specialist",
+                "company": "Digital Marketing Pro",
+                "location": "Remote",
+                "jobType": "Full-time",
+                "experienceLevel": "Mid Level",
+                "description": "Create engaging, SEO-optimized content for various digital platforms. You'll develop content strategies, write blog posts, and optimize content for search engines to drive organic traffic.",
+                "requirements": [
+                    "2+ years of content writing experience",
+                    "Strong SEO knowledge and experience",
+                    "Excellent writing and communication skills",
+                    "Experience with content management systems",
+                    "Knowledge of digital marketing principles",
+                    "Portfolio of published content required"
+                ],
+                "skills": ["Content Writing", "SEO Optimization", "Digital Marketing", "Blogging", "Communication Skills", "Email Marketing", "WordPress", "Google Analytics"],
+                "salary": "$50,000 - $70,000",
+                "benefits": ["Remote Work", "Health Insurance", "Flexible Schedule", "Professional Development"],
+                "applicationDeadline": "2025-07-28",
                 "postedDate": datetime.now().isoformat(),
                 "status": "Active"
             }

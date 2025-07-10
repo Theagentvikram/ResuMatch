@@ -18,9 +18,10 @@ interface JobDescription {
 
 interface SearchFormProps {
   onJobDescriptionUpdate?: (skills: string[]) => void;
+  analysisMode?: 'ai' | 'regex';
 }
 
-export function SearchForm({ onJobDescriptionUpdate }: SearchFormProps) {
+export function SearchForm({ onJobDescriptionUpdate, analysisMode = 'ai' }: SearchFormProps) {
   const [query, setQuery] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
   const [jobDescription, setJobDescription] = useState<JobDescription | null>(null);

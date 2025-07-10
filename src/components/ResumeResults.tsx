@@ -13,9 +13,10 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface ResumeResultsProps {
   jobDescriptionSkills?: string[];
+  analysisMode?: 'ai' | 'regex';
 }
 
-export function ResumeResults({ jobDescriptionSkills = [] }: ResumeResultsProps) {
+export function ResumeResults({ jobDescriptionSkills = [], analysisMode = 'ai' }: ResumeResultsProps) {
   const { searchResults, isSearching, searchQuery } = useResumes();
   const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<{ [key: string]: string }>({});

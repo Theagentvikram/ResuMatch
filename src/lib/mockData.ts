@@ -171,31 +171,24 @@ export const searchResumes = (query: string): Promise<SearchResult[]> => {
 };
 
 // Login service
-export const loginUser = (username: string, password: string): Promise<User | null> => {
-  // Check hardcoded demo users (by username)
-  let user = mockUsers.find(
-    u => (u.username === username || u.email === username) && u.password === password
-  );
-
-  // If not found, check localStorage demo users (by email)
-  if (!user) {
-    const demoUsers = JSON.parse(localStorage.getItem("demoUsers") || "[]");
-    const found = demoUsers.find((u: any) => u.email === username && u.password === password);
-    if (found) {
-      user = {
-        id: found.email,
-        username: found.email,
-        password: found.password,
-        role: found.role || "applicant",
-      };
-    }
+export const loginUser = async (username: string, password: string): Promise<User | null> => {
+  // Check built-in mock users first
+  const mockUser = mockUsers.find(user => user.username === username && user.password === password);
+  if (mockUser) {
+    return mockUser;
   }
   
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve(user || null);
-    }, 500);
-  });
+  // Check users created through signup
+  const signupUsers = JSON.parse(localStorage.getItem("resumatch_users") || "[]");
+  const signupUser = signupUsers.find((user: User) => user.username === username && user.password === password);
+  if (signupUser) {
+    return signupUser;
+  }
+  
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  return null; // Login failed
 };
 
 // Save resume service

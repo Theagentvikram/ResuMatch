@@ -85,9 +85,9 @@ const Index = () => {
                 size="lg"
                 variant="outline"
                 className="border-blue-500 text-blue-500 hover:bg-blue-500/10 gap-2 px-8 py-6 text-lg"
-                onClick={() => navigate("/user-login")}
+                onClick={() => navigate("/signup")}
               >
-                New User? Login Here
+                New User? Sign Up Here
               </Button>
             </motion.div>
           </motion.div>

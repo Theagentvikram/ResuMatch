@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+import { loginUser } from "@/lib/mockData";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
 import { EyeIcon, EyeOffIcon, LogInIcon, Mail } from "lucide-react";
 
-export function RecruiterLoginForm() {
+export function ApplicantLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -18,95 +19,30 @@ export function RecruiterLoginForm() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Validate company email domain
-  const isValidCompanyEmail = (email: string) => {
-    const companyDomains = [
-      'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
-      'icloud.com', 'aol.com', 'protonmail.com', 'mail.com'
-    ];
-    const domain = email.split('@')[1]?.toLowerCase();
-    
-    // For demo purposes, allow some common business domains or non-personal domains
-    if (!domain) return false;
-    
-    // Reject common personal email domains
-    if (companyDomains.includes(domain)) {
-      return false;
-    }
-    
-    // Accept business-looking domains or specific test domains
-    return domain.includes('.') && (
-      domain.includes('corp') || 
-      domain.includes('inc') || 
-      domain.includes('ltd') || 
-      domain.includes('company') ||
-      domain.includes('tech') ||
-      email === 'recruiter@company.com' || // Test account
-      email === 'hr@techcorp.com' // Test account
-    );
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Enhanced validation for recruiters
-    if (!email || !password) {
-      toast({
-        title: "Validation Error",
-        description: "Both email and password are required for recruiter access.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    if (!isValidCompanyEmail(email)) {
-      toast({
-        title: "Invalid Email",
-        description: "Please use a company email address. Personal email domains are not allowed for recruiter accounts.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      // First check localStorage for dynamically created recruiters
-      const signupUsers = JSON.parse(localStorage.getItem("resumatch_users") || "[]");
-      const dynamicUser = signupUsers.find((user: any) => 
-        user.username === email && user.password === password && user.role === 'recruiter'
-      );
+      // First try to login with the email (new format)
+      let user = await loginUser(email, password);
       
-      if (dynamicUser) {
-        login(dynamicUser);
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${dynamicUser.recruiterName || 'recruiter'}!`,
-        });
-        navigate("/search");
-        return;
+      // If that fails, try with username format for backward compatibility
+      if (!user) {
+        user = await loginUser(email.split('@')[0], password);
       }
       
-      // Fall back to demo credentials
-      if ((email === 'recruiter@company.com' || email === 'hr@techcorp.com') && password === 'recruiter123') {
-        const user = {
-          id: '1',
-          username: email.split('@')[0],
-          password: 'hidden', // Required by type but not used in demo
-          role: 'recruiter' as const
-        };
-        
+      if (user && user.role !== "admin" && user.role === "applicant") {
         login(user);
         toast({
           title: "Login successful",
-          description: `Welcome back, recruiter!`,
+          description: `Welcome back, ${user.username}!`,
         });
-        navigate("/search");
+        navigate("/upload-status");
       } else {
         toast({
           title: "Login failed",
-          description: "Invalid credentials. Please check your email and password, or create a recruiter account if you don't have one.",
+          description: "Invalid credentials or you don't have applicant access. Please check your email and password, or create an account if you don't have one.",
           variant: "destructive",
         });
       }
@@ -134,9 +70,11 @@ export function RecruiterLoginForm() {
     >
       <Card className="w-full backdrop-blur-sm bg-white/90 shadow-xl border-t border-l border-white/20">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Recruiter Login</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            Welcome Back
+          </CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access the resume search platform
+            Sign in to your ResuMatch account to manage your job applications
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -148,13 +86,13 @@ export function RecruiterLoginForm() {
               transition={{ duration: 0.3, delay: 0.1 }}
             >
               <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" /> Company Email
+                <Mail className="h-4 w-4" /> Email Address
               </Label>
               <div className="relative">
                 <Input
                   id="email"
                   type="email"
-                  placeholder="recruiter@company.com"
+                  placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-3 bg-white/50 focus:bg-white transition-all duration-300"
@@ -162,7 +100,7 @@ export function RecruiterLoginForm() {
                 />
               </div>
               <div className="text-xs text-brand-blue">
-                Demo: Use "recruiter@company.com" or "hr@techcorp.com"
+                Demo: Use "user@example.com" or just "user"
               </div>
             </motion.div>
             
@@ -201,7 +139,7 @@ export function RecruiterLoginForm() {
                 </button>
               </div>
               <div className="text-xs text-brand-blue">
-                Demo: Use "recruiter123" as password
+                Demo: Use "password123"
               </div>
             </motion.div>
             
@@ -214,7 +152,7 @@ export function RecruiterLoginForm() {
             >
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-blue-500 to-blue-700 hover:opacity-90 transition-all duration-300 gap-2"
+                className="w-full gap-2 bg-gradient-to-r from-purple-500 to-purple-700 hover:opacity-90 transition-all duration-300"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -223,11 +161,11 @@ export function RecruiterLoginForm() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Logging in...
+                    Signing in...
                   </>
                 ) : (
                   <>
-                    <LogInIcon className="h-4 w-4" /> Login as Recruiter
+                    <LogInIcon className="h-4 w-4" /> Sign In
                   </>
                 )}
               </Button>
@@ -239,25 +177,25 @@ export function RecruiterLoginForm() {
             className="text-sm text-muted-foreground"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
           >
-            Don't have a recruiter account?{' '}
-            <span className="text-blue-500 hover:underline cursor-pointer" onClick={() => navigate('/recruiter-signup')}>
-              Sign up here
+            Don't have an account?{' '}
+            <span className="text-blue-500 hover:underline cursor-pointer" onClick={() => navigate('/signup')}>
+              Create one here
             </span>
           </motion.p>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
           >
             <Button 
               variant="ghost" 
               size="sm" 
               className="text-purple-500 w-full"
-              onClick={() => navigate("/user-login")}
+              onClick={() => navigate("/recruiter-login")}
             >
-              Are you a job seeker? Login here
+              Are you a recruiter? Login here
             </Button>
           </motion.div>
         </CardFooter>
