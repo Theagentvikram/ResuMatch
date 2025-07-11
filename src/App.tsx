@@ -22,6 +22,7 @@ import NotFound from "./pages/NotFound";
 import { RecruiterResumesManagementPage } from "./pages/RecruiterResumesManagementPage";
 import JobPostingPage from "./pages/JobPostingPage";
 import JobPortalPage from "./pages/JobPortalPage";
+import JobListingsManagementPage from "./pages/JobListingsManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -98,6 +99,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredUserType="recruiter">
                     <JobPostingPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/recruiter/job-listings" 
+                element={
+                  <ProtectedRoute requiredUserType="recruiter">
+                    <JobListingsManagementPage />
                   </ProtectedRoute>
                 } 
               />

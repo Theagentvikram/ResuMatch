@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Layout } from "../components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -6,6 +7,7 @@ import { Input } from "../components/ui/input";
 import { toast } from "../hooks/use-toast";
 import { API_BASE_URL } from '../config/api';
 import SuggestionsModal from '../components/SuggestionsModal';
+import { motion } from "framer-motion";
 import { 
   MapPin, 
   Clock, 
@@ -16,7 +18,8 @@ import {
   Calendar,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Briefcase
 } from 'lucide-react';
 
 interface PersonalizedSuggestion {
@@ -104,6 +107,8 @@ const JobPortalPage: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/api/jobs`);
       if (response.ok) {
         const jobsData = await response.json();
+        console.log('Loaded jobs:', jobsData); // Debug log
+        console.log('First job skills:', jobsData[0]?.skills); // Debug log
         setJobs(jobsData);
       }
     } catch (error) {
@@ -218,15 +223,9 @@ const JobPortalPage: React.FC = () => {
   };
 
   const getMatchIcon = (score: number) => {
-    if (score >= 80) return <CheckCircle className="w-5 h-5 text-green-600" />;
-    if (score >= 60) return <AlertCircle className="w-5 h-5 text-yellow-600" />;
-    return <CheckCircle className="w-5 h-5 text-orange-600" />;
-  };
-
-  const getMatchColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-50';
-    if (score >= 60) return 'text-yellow-600 bg-yellow-50';
-    return 'text-orange-600 bg-orange-50';
+    if (score >= 80) return <CheckCircle className="w-5 h-5 text-green-400" />;
+    if (score >= 60) return <AlertCircle className="w-5 h-5 text-yellow-400" />;
+    return <CheckCircle className="w-5 h-5 text-orange-400" />;
   };
 
   const filteredJobs = jobs.filter(job =>
@@ -237,117 +236,155 @@ const JobPortalPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-gray-600">Loading job opportunities...</div>
+      <Layout>
+        <div className="py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg text-gray-300">Loading job opportunities...</div>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Job Portal</h1>
-        <p className="text-gray-600">Find your perfect job match and get personalized resume suggestions</p>
-      </div>
+    <Layout>
+      <div className="py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="text-center mb-12"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="inline-flex items-center justify-center p-2 mb-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full"
+          >
+            <motion.div
+              animate={{ rotate: [0, 5, 0, -5, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 p-2 rounded-full"
+            >
+              <Briefcase className="h-6 w-6 text-white" />
+            </motion.div>
+          </motion.div>
+          <h1 className="text-3xl font-bold mb-2 text-white">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+              Job Portal
+            </span>
+          </h1>
+          <p className="text-gray-300">
+            Find your perfect job match and get personalized resume suggestions
+          </p>
+        </motion.div>
 
-      {resumes.length === 0 && (
-        <Card className="mb-6 border-yellow-200 bg-yellow-50">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertCircle className="w-5 h-5 text-yellow-600" />
-              <p className="text-yellow-800">
-                You haven't uploaded any resumes yet. <a href="/upload" className="underline">Upload a resume</a> to see personalized job matches and suggestions.
-              </p>
+        <div className="max-w-6xl mx-auto space-y-6">
+
+          {resumes.length === 0 && (
+            <Card className="mb-6 bg-yellow-500/10 border-yellow-500/20 backdrop-blur-md">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="w-5 h-5 text-yellow-400" />
+                  <p className="text-yellow-200">
+                    You haven't uploaded any resumes yet. <a href="/upload" className="underline text-yellow-300 hover:text-yellow-100">Upload a resume</a> to see personalized job matches and suggestions.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                placeholder="Search jobs by title, company, or skills..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white/5 border-white/10 text-white placeholder-gray-400 focus:border-purple-500/50"
+              />
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <Input
-            placeholder="Search jobs by title, company, or skills..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
-      <div className="grid gap-6">
-        {filteredJobs.map((job) => (
-          <Card key={job.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <Building className="w-4 h-4" />
-                      <span>{job.company}</span>
+          <div className="grid gap-6">
+            {filteredJobs.map((job) => (
+              <Card key={job.id} className="bg-white/5 backdrop-blur-md border-white/10 hover:border-purple-500/20 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-xl mb-2 text-white">{job.title}</CardTitle>
+                      <div className="flex items-center space-x-4 text-sm text-gray-300">
+                        <div className="flex items-center space-x-1">
+                          <Building className="w-4 h-4 text-blue-400" />
+                          <span>{job.company}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <MapPin className="w-4 h-4 text-green-400" />
+                          <span>{job.location}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Clock className="w-4 h-4 text-purple-400" />
+                          <span>{job.jobType}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Users className="w-4 h-4 text-orange-400" />
+                          <span>{job.experienceLevel}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <MapPin className="w-4 h-4" />
-                      <span>{job.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{job.jobType}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Users className="w-4 h-4" />
-                      <span>{job.experienceLevel}</span>
-                    </div>
+                    {job.salary && (
+                      <div className="flex items-center space-x-1 text-green-400 font-medium">
+                        <DollarSign className="w-4 h-4" />
+                        <span>{job.salary}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-                {job.salary && (
-                  <div className="flex items-center space-x-1 text-green-600 font-medium">
-                    <DollarSign className="w-4 h-4" />
-                    <span>{job.salary}</span>
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-            
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-gray-700 line-clamp-3">{job.description}</p>
+                </CardHeader>
                 
-                <div>
-                  <h4 className="font-medium mb-2">Required Skills</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {job.skills.map((skill, index) => (
-                      <Badge key={index} variant="secondary">{skill}</Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {job.benefits && job.benefits.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-2">Benefits</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {job.benefits.map((benefit, index) => (
-                        <Badge key={index} variant="outline">{benefit}</Badge>
-                      ))}
+                <CardContent>
+                  <div className="space-y-4">
+                    <p className="text-gray-300 line-clamp-3">{job.description}</p>
+                    
+                    <div>
+                      <h4 className="font-medium mb-2 text-white">Required Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {(() => {
+                          console.log(`Job ${job.id} skills:`, job.skills); // Debug log
+                          return job.skills && job.skills.length > 0 ? (
+                            job.skills.map((skill, index) => (
+                              <Badge key={index} variant="secondary" className="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30">{skill}</Badge>
+                            ))
+                          ) : (
+                            <Badge variant="outline" className="border-gray-500/30 text-gray-400">No specific skills listed</Badge>
+                          );
+                        })()}
+                      </div>
                     </div>
-                  </div>
-                )}
 
-                {job.applicationDeadline && (
-                  <div className="flex items-center space-x-1 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>Apply by: {new Date(job.applicationDeadline).toLocaleDateString()}</span>
-                  </div>
-                )}
+                    {job.benefits && job.benefits.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2 text-white">Benefits</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {job.benefits.map((benefit, index) => (
+                            <Badge key={index} variant="outline" className="border-purple-500/30 text-purple-300">{benefit}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                <div className="flex space-x-3 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setSelectedJob(selectedJob?.id === job.id ? null : job)}
-                  >
+                    {job.applicationDeadline && (
+                      <div className="flex items-center space-x-1 text-sm text-gray-300">
+                        <Calendar className="w-4 h-4 text-red-400" />
+                        <span>Apply by: {new Date(job.applicationDeadline).toLocaleDateString()}</span>
+                      </div>
+                    )}
+
+                    <div className="flex space-x-3 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setSelectedJob(selectedJob?.id === job.id ? null : job)}
+                        className="border-white/20 text-gray-300 hover:bg-white/10 hover:text-white"
+                      >
                     {selectedJob?.id === job.id ? 'Hide Details' : 'View Details'}
                   </Button>
                   
@@ -371,17 +408,17 @@ const JobPortalPage: React.FC = () => {
 
                 {/* Resume Matches Section */}
                 {showMatches === job.id && (
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="mt-6 p-4 bg-black/20 backdrop-blur-md rounded-lg border border-white/10">
                     {loadingMatches === job.id ? (
                       <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin mr-2" />
-                        <span className="text-gray-600">Analyzing your resumes for this job...</span>
+                        <Loader2 className="w-6 h-6 animate-spin mr-2 text-purple-400" />
+                        <span className="text-gray-300">Analyzing your resumes for this job...</span>
                       </div>
                     ) : matches[job.id] ? (
                       <>
                         <div className="flex items-center justify-between mb-4">
-                          <h4 className="font-medium">Resume Match Analysis</h4>
-                          <p className="text-sm text-gray-600">
+                          <h4 className="font-medium text-white">Resume Match Analysis</h4>
+                          <p className="text-sm text-gray-400">
                             Which of your resumes fits this job better?
                           </p>
                         </div>
@@ -393,13 +430,13 @@ const JobPortalPage: React.FC = () => {
                               if (!resume) return null;
                               
                               return (
-                                <div key={match.resumeId} className={`bg-white p-4 rounded border-2 ${
-                                  index === 0 ? 'border-green-200 bg-green-50' : 'border-gray-200'
+                                <div key={match.resumeId} className={`bg-white/5 p-4 rounded border-2 backdrop-blur-md ${
+                                  index === 0 ? 'border-green-400/50 bg-green-500/10' : 'border-white/10'
                                 }`}>
                                   {index === 0 && (
                                     <div className="flex items-center mb-2">
-                                      <CheckCircle className="w-4 h-4 text-green-600 mr-1" />
-                                      <span className="text-xs font-medium text-green-700 uppercase tracking-wide">
+                                      <CheckCircle className="w-4 h-4 text-green-400 mr-1" />
+                                      <span className="text-xs font-medium text-green-300 uppercase tracking-wide">
                                         Best Match
                                       </span>
                                     </div>
@@ -409,21 +446,25 @@ const JobPortalPage: React.FC = () => {
                                     <div className="flex items-center space-x-3">
                                       {getMatchIcon(match.matchScore)}
                                       <div>
-                                        <h5 className="font-medium">{resume.filename}</h5>
-                                        <p className="text-sm text-gray-600">{resume.category} • {resume.experience} years experience</p>
+                                        <h5 className="font-medium text-white">{resume.filename}</h5>
+                                        <p className="text-sm text-gray-400">{resume.category} • {resume.experience} years experience</p>
                                       </div>
                                     </div>
-                                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${getMatchColor(match.matchScore)}`}>
+                                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                      match.matchScore >= 80 ? 'text-green-300 bg-green-500/20' :
+                                      match.matchScore >= 60 ? 'text-yellow-300 bg-yellow-500/20' :
+                                      'text-orange-300 bg-orange-500/20'
+                                    }`}>
                                       {match.matchScore}% Match
                                     </div>
                                   </div>
                                   
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-3">
                                     <div>
-                                      <span className="font-medium text-green-600">Matching Skills ({match.matchingSkills.length}):</span>
+                                      <span className="font-medium text-green-400">Matching Skills ({match.matchingSkills.length}):</span>
                                       <div className="flex flex-wrap gap-1 mt-1">
                                         {match.matchingSkills.slice(0, 8).map((skill, idx) => (
-                                          <Badge key={idx} variant="secondary" className="text-xs">
+                                          <Badge key={idx} variant="secondary" className="text-xs bg-green-500/20 text-green-300">
                                             {skill}
                                           </Badge>
                                         ))}
@@ -436,10 +477,10 @@ const JobPortalPage: React.FC = () => {
                                     </div>
                                     
                                     <div>
-                                      <span className="font-medium text-red-600">Missing Skills ({match.missingSkills.length}):</span>
+                                      <span className="font-medium text-red-400">Missing Skills ({match.missingSkills.length}):</span>
                                       <div className="flex flex-wrap gap-1 mt-1">
                                         {match.missingSkills.slice(0, 5).map((skill, idx) => (
-                                          <Badge key={idx} variant="outline" className="text-xs">
+                                          <Badge key={idx} variant="outline" className="text-xs border-red-500/30 text-red-300">
                                             {skill}
                                           </Badge>
                                         ))}
@@ -452,18 +493,17 @@ const JobPortalPage: React.FC = () => {
                                     </div>
                                   </div>
                                   
-                                  <div className="text-sm text-gray-700 mb-3 p-3 bg-gray-50 rounded">
-                                    <strong>AI Assessment:</strong> {match.overallAssessment}
+                                  <div className="text-sm text-gray-300 mb-3">
+                                    <strong className="text-white">AI Assessment:</strong> {match.overallAssessment}
                                   </div>
                                   
                                   <Button
+                                    onClick={() => getPersonalizedSuggestions(match.resumeId, job.id)}
+                                    className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
                                     size="sm"
-                                    variant="outline"
-                                    onClick={() => getPersonalizedSuggestions(resume.id, job.id)}
-                                    disabled={loadingSuggestions === `${resume.id}-${job.id}`}
-                                    className="w-full"
+                                    disabled={loadingSuggestions === `${match.resumeId}-${job.id}`}
                                   >
-                                    {loadingSuggestions === `${resume.id}-${job.id}` ? (
+                                    {loadingSuggestions === `${match.resumeId}-${job.id}` ? (
                                       <>
                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                         Generating Suggestions...
@@ -478,9 +518,9 @@ const JobPortalPage: React.FC = () => {
                         </div>
                         
                         {matches[job.id].length > 1 && (
-                          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
-                            <p className="text-sm text-blue-800">
-                              <strong>Recommendation:</strong> Use your <strong>
+                          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded backdrop-blur-md">
+                            <p className="text-sm text-blue-200">
+                              <strong className="text-blue-100">Recommendation:</strong> Use your <strong className="text-white">
                                 {resumes.find(r => r.id === matches[job.id].sort((a, b) => b.matchScore - a.matchScore)[0].resumeId)?.filename}
                               </strong> resume for this application as it has the highest match score.
                             </p>
@@ -488,7 +528,7 @@ const JobPortalPage: React.FC = () => {
                         )}
                       </>
                     ) : (
-                      <div className="text-center py-4 text-gray-600">
+                      <div className="text-center py-4 text-gray-400">
                         No matches found. Please try again.
                       </div>
                     )}
@@ -497,13 +537,13 @@ const JobPortalPage: React.FC = () => {
 
                 {/* Job Details Section */}
                 {selectedJob?.id === job.id && (
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium mb-4">Job Details</h4>
+                  <div className="mt-6 p-4 bg-black/20 backdrop-blur-md rounded-lg border border-white/10">
+                    <h4 className="font-medium mb-4 text-white">Job Details</h4>
                     
                     {job.requirements.length > 0 && (
                       <div className="mb-4">
-                        <h5 className="font-medium mb-2">Requirements</h5>
-                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                        <h5 className="font-medium mb-2 text-gray-300">Requirements</h5>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-400">
                           {job.requirements.map((req, index) => (
                             <li key={index}>{req}</li>
                           ))}
@@ -511,9 +551,9 @@ const JobPortalPage: React.FC = () => {
                       </div>
                     )}
                     
-                    <div className="text-sm text-gray-600">
-                      <p>Posted: {new Date(job.postedDate).toLocaleDateString()}</p>
-                      <p>Status: <span className="text-green-600 font-medium">{job.status}</span></p>
+                    <div className="text-sm text-gray-400">
+                      <p>Posted: <span className="text-gray-300">{new Date(job.postedDate).toLocaleDateString()}</span></p>
+                      <p>Status: <span className="text-green-400 font-medium">{job.status}</span></p>
                     </div>
                   </div>
                 )}
@@ -521,29 +561,31 @@ const JobPortalPage: React.FC = () => {
             </CardContent>
           </Card>
         ))}
+
+          {filteredJobs.length === 0 && (
+            <Card className="bg-white/5 backdrop-blur-md border-white/10">
+              <CardContent className="p-8 text-center">
+                <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-white mb-2">No jobs found</h3>
+                <p className="text-gray-300">
+                  {searchTerm ? `No jobs match your search for "${searchTerm}"` : 'No job postings available at the moment'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Suggestions Modal */}
+          <SuggestionsModal
+            isOpen={suggestionsModal.isOpen}
+            onClose={() => setSuggestionsModal({ isOpen: false, suggestions: null })}
+            suggestions={suggestionsModal.suggestions}
+            resumeFilename={suggestionsModal.resumeFilename}
+            jobTitle={suggestionsModal.jobTitle}
+          />
+        </div>
       </div>
-
-      {filteredJobs.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
-            <p className="text-gray-600">
-              {searchTerm ? `No jobs match your search for "${searchTerm}"` : 'No job postings available at the moment'}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Suggestions Modal */}
-      <SuggestionsModal
-        isOpen={suggestionsModal.isOpen}
-        onClose={() => setSuggestionsModal({ isOpen: false, suggestions: null })}
-        suggestions={suggestionsModal.suggestions}
-        resumeFilename={suggestionsModal.resumeFilename}
-        jobTitle={suggestionsModal.jobTitle}
-      />
     </div>
+    </Layout>
   );
 };
 

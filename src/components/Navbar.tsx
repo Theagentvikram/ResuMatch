@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { FileText, Search, Upload, User, ChevronDown, LogOut, BarChart, Trash2, Briefcase, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { FileText, Search, Upload, User, ChevronDown, LogOut, Briefcase, Plus } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,22 @@ import { motion } from "framer-motion";
 
 export function Navbar() {
   const { user, logout, isAuthenticated, userType } = useAuth();
+  const location = useLocation();
+
+  // Helper function to determine if a path is active
+  const isActivePath = (path: string) => {
+    if (path === '/search') {
+      return location.pathname === '/search' || location.pathname.startsWith('/search');
+    }
+    return location.pathname === path || location.pathname.startsWith(path);
+  };
+
+  // Helper function to get button classes with active state
+  const getButtonClasses = (path: string) => {
+    const baseClasses = "text-gray-300 hover:text-white hover:bg-white/10 gap-1";
+    const activeClasses = "text-white bg-white/20 border-purple-500/50";
+    return isActivePath(path) ? `${baseClasses} ${activeClasses}` : baseClasses;
+  };
 
   return (
     <motion.nav 
@@ -38,17 +54,20 @@ export function Navbar() {
               {userType === "recruiter" && (
                 <div className="hidden md:flex space-x-3">
                   <Link to="/search">
-                    <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
-                      <Search className="h-4 w-4" /> Search
-                    </Button>
-                  </Link>
-                  <Link to="/search?tab=analyze">
-                    <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
-                      <BarChart className="h-4 w-4" /> Analysis
+                    <Button 
+                      variant={isActivePath('/search') ? 'default' : 'ghost'} 
+                      size="sm" 
+                      className={getButtonClasses('/search')}
+                    >
+                      <Search className="h-4 w-4" /> AI Analysis
                     </Button>
                   </Link>
                   <Link to="/recruiter/post-job">
-                    <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
+                    <Button 
+                      variant={isActivePath('/recruiter/post-job') ? 'default' : 'ghost'} 
+                      size="sm" 
+                      className={getButtonClasses('/recruiter/post-job')}
+                    >
                       <Plus className="h-4 w-4" /> Post Job
                     </Button>
                   </Link>
@@ -58,17 +77,29 @@ export function Navbar() {
               {userType === "applicant" && (
                 <div className="hidden md:flex space-x-3">
                   <Link to="/upload">
-                    <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
+                    <Button 
+                      variant={isActivePath('/upload') ? 'default' : 'ghost'} 
+                      size="sm" 
+                      className={getButtonClasses('/upload')}
+                    >
                       <Upload className="h-4 w-4" /> Upload
                     </Button>
                   </Link>
                   <Link to="/upload-status">
-                    <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
+                    <Button 
+                      variant={isActivePath('/upload-status') ? 'default' : 'ghost'} 
+                      size="sm" 
+                      className={getButtonClasses('/upload-status')}
+                    >
                       <FileText className="h-4 w-4" /> Status
                     </Button>
                   </Link>
                   <Link to="/jobs">
-                    <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10 gap-1">
+                    <Button 
+                      variant={isActivePath('/jobs') ? 'default' : 'ghost'} 
+                      size="sm" 
+                      className={getButtonClasses('/jobs')}
+                    >
                       <Briefcase className="h-4 w-4" /> Jobs
                     </Button>
                   </Link>
@@ -96,17 +127,12 @@ export function Navbar() {
                     <>
                       <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
                         <Link to="/search" className="flex items-center w-full">
-                          <Search className="h-4 w-4 mr-2" /> Search Resumes
+                          <Search className="h-4 w-4 mr-2" /> AI Resume Analysis
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
-                        <Link to="/search?tab=analyze" className="flex items-center w-full">
-                          <BarChart className="h-4 w-4 mr-2" /> Resume Analysis
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>
-                        <Link to="/recruiter/resumes-management" className="flex items-center w-full">
-                          <Trash2 className="h-4 w-4 mr-2" /> Manage Resumes
+                        <Link to="/recruiter/job-listings" className="flex items-center w-full">
+                          <Briefcase className="h-4 w-4 mr-2" /> Manage Job Listings
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem className="hover:bg-white/10 hover:text-white cursor-pointer" asChild>

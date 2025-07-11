@@ -306,5 +306,31 @@
     "applicationDeadline": "2025-07-28",
     "postedDate": "2025-07-11T00:27:53.756292",
     "status": "Active"
+  },
+  {
+    "id": "e48b5e3b-16e9-460c-8521-703527af8e90",
+    "title": "Senior Blogger",
+    "company": "Techabhee Blogs",
+    "location": "Street no 9",
+    "jobType": "Full-time",
+    "experienceLevel": "Mid Level",
+    "description": "About the Role:\nWe are seeking a creative and passionate Blogger to join our content team. You will be responsible for creating engaging, informative, and SEO-friendly blog content aligned with our brand\u2019s voice and marketing strategy. Your work will play a vital role in driving traffic, improving search rankings, and building authority in our niche.\n\nKey Responsibilities:\nWrite clear, compelling blog posts, articles, and web content on assigned topics\n\nConduct thorough research on industry-related topics and trends\n\nOptimize content for SEO (keywords, internal linking, metadata)\n\nCollaborate with the marketing/design team to align blog content with campaigns\n\nPromote content across social media and other channels when required\n\nMonitor blog performance (traffic, engagement) and suggest improvements\n\nEnsure consistency in tone, voice, and quality across all written content\n\nUpdate existing content for relevance and accuracy\n\nRequirements:\nProven experience as a blogger, content writer, or similar role\n\nExcellent writing, editing, and proofreading skills\n\nStrong understanding of SEO and web traffic metrics\n\nFamiliarity with CMS platforms like WordPress\n\nAbility to meet deadlines and work independently\n\nBasic knowledge of Canva, Google Analytics, or AI tools (a plus)\n\nPreferred Qualifications:\nBachelor's degree in English, Journalism, Marketing, Communications, or related field\n\nExperience writing in [insert niche: e.g., technology, travel, fashion, finance]\n\nPortfolio of published articles or blog posts\n\n",
+    "requirements": [
+      "2+ years of Experience",
+      "SEO Optimization"
+    ],
+    "skills": [
+      "Python",
+      "React",
+      "Sql",
+      "SEO Optimization",
+      "Blogging",
+      "Email marketing"
+    ],
+    "salary": "120000 - 300000",
+    "benefits": [],
+    "applicationDeadline": "2025-08-08",
+    "postedDate": "2025-07-11T12:07:11.248324",
+    "status": "Active"
   }
 ]

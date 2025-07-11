@@ -1467,6 +1467,23 @@ async def get_all_jobs():
         print(f"Error getting job postings: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get job postings: {str(e)}")
 
+@app.get("/api/jobs/all", response_model=List[JobPostingResponse])
+async def get_all_jobs_including_inactive():
+    """
+    Get all job postings including inactive ones (for management)
+    """
+    try:
+        # Create sample jobs if none exist
+        if not JOB_POSTINGS:
+            create_sample_jobs()
+        
+        print(f"Returning {len(JOB_POSTINGS)} total job postings")
+        return JOB_POSTINGS
+        
+    except Exception as e:
+        print(f"Error getting all job postings: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get all job postings: {str(e)}")
+
 @app.get("/api/jobs/{job_id}", response_model=JobPostingResponse)
 async def get_job_by_id(job_id: str):
     """
@@ -1794,6 +1811,65 @@ Format as clear bullet points."""
         print(f"Error generating personalized suggestions: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate suggestions: {str(e)}")
 
+@app.delete("/api/jobs/{job_id}")
+async def delete_job_posting(job_id: str):
+    """
+    Delete a job posting by ID
+    """
+    try:
+        global JOB_POSTINGS
+        
+        # Find the job index
+        job_index = next((i for i, j in enumerate(JOB_POSTINGS) if j["id"] == job_id), None)
+        
+        if job_index is None:
+            raise HTTPException(status_code=404, detail=f"Job posting {job_id} not found")
+        
+        # Remove the job from the list
+        deleted_job = JOB_POSTINGS.pop(job_index)
+        save_job_postings()
+        
+        print(f"Deleted job posting: {deleted_job['title']} at {deleted_job['company']}")
+        return {"message": "Job posting deleted successfully", "deleted_job": deleted_job}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting job posting: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete job posting: {str(e)}")
+
+@app.patch("/api/jobs/{job_id}/status")
+async def update_job_status(job_id: str, status_update: dict = Body(...)):
+    """
+    Update the status of a job posting (Active/Inactive)
+    """
+    try:
+        global JOB_POSTINGS
+        
+        # Validate status
+        new_status = status_update.get("status")
+        if new_status not in ["Active", "Inactive"]:
+            raise HTTPException(status_code=400, detail="Status must be 'Active' or 'Inactive'")
+        
+        # Find and update the job
+        job = next((j for j in JOB_POSTINGS if j["id"] == job_id), None)
+        
+        if not job:
+            raise HTTPException(status_code=404, detail=f"Job posting {job_id} not found")
+        
+        old_status = job["status"]
+        job["status"] = new_status
+        save_job_postings()
+        
+        print(f"Updated job status: {job['title']} from {old_status} to {new_status}")
+        return {"message": f"Job status updated to {new_status}", "job": job}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating job status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update job status: {str(e)}")
+
 def create_sample_jobs():
     """Create sample job postings for demonstration"""
     global JOB_POSTINGS
@@ -1987,6 +2063,65 @@ def create_sample_jobs():
         JOB_POSTINGS.extend(sample_jobs)
         save_job_postings()
         print(f"Created {len(sample_jobs)} sample job postings")
+
+@app.delete("/api/jobs/{job_id}")
+async def delete_job_posting(job_id: str):
+    """
+    Delete a job posting by ID
+    """
+    try:
+        global JOB_POSTINGS
+        
+        # Find the job index
+        job_index = next((i for i, j in enumerate(JOB_POSTINGS) if j["id"] == job_id), None)
+        
+        if job_index is None:
+            raise HTTPException(status_code=404, detail=f"Job posting {job_id} not found")
+        
+        # Remove the job from the list
+        deleted_job = JOB_POSTINGS.pop(job_index)
+        save_job_postings()
+        
+        print(f"Deleted job posting: {deleted_job['title']} at {deleted_job['company']}")
+        return {"message": "Job posting deleted successfully", "deleted_job": deleted_job}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting job posting: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete job posting: {str(e)}")
+
+@app.patch("/api/jobs/{job_id}/status")
+async def update_job_status(job_id: str, status_update: dict = Body(...)):
+    """
+    Update the status of a job posting (Active/Inactive)
+    """
+    try:
+        global JOB_POSTINGS
+        
+        # Validate status
+        new_status = status_update.get("status")
+        if new_status not in ["Active", "Inactive"]:
+            raise HTTPException(status_code=400, detail="Status must be 'Active' or 'Inactive'")
+        
+        # Find and update the job
+        job = next((j for j in JOB_POSTINGS if j["id"] == job_id), None)
+        
+        if not job:
+            raise HTTPException(status_code=404, detail=f"Job posting {job_id} not found")
+        
+        old_status = job["status"]
+        job["status"] = new_status
+        save_job_postings()
+        
+        print(f"Updated job status: {job['title']} from {old_status} to {new_status}")
+        return {"message": f"Job status updated to {new_status}", "job": job}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating job status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update job status: {str(e)}")
 
 if __name__ == "__main__":
     try:
