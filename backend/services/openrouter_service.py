@@ -128,16 +128,16 @@ Format your response as a valid JSON object with these five keys. DO NOT include
     logger.info(f"API key length: {len(api_key)} characters")
     
     
-    # Prepare the payload
+    # Prepare the payload with optimized parameters for Mistral
     payload = {
         "model": OPENROUTER_MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
-        "max_tokens": 500,
-        "temperature": 0.1,
-        "top_p": 0.95
+        "max_tokens": 800,
+        "temperature": 0.3,
+        "response_format": {"type": "json_object"}
     }
     
     try:
@@ -162,8 +162,22 @@ Format your response as a valid JSON object with these five keys. DO NOT include
         # Handle different response status codes
         if response.status_code == 200:
             # Success! Parse the response
-            result = response.json()
+            try:
+                result = response.json()
+            except Exception as e:
+                logger.error(f"Failed to parse JSON response: {e}")
+                logger.error(f"Raw response text: {response.text[:500]}")
+                if fallback_to_mock:
+                    logger.info("Falling back to mock data due to JSON parse error")
+                    return generate_mock_analysis(resume_text)
+                else:
+                    raise ValueError(f"Failed to parse API response: {e}")
+            
             logger.info("Received successful response from OpenRouter API")
+            logger.info(f"Response structure: {list(result.keys()) if isinstance(result, dict) else type(result)}")
+            
+            # Log the full result for debugging (first 1000 chars)
+            logger.info(f"Full API response: {json.dumps(result)[:1000]}")
             
             # Extract the generated text
             if "choices" in result and len(result["choices"]) > 0:
@@ -280,8 +294,14 @@ Format your response as a valid JSON object with these five keys. DO NOT include
                     logger.debug(f"Raw response: {generated_text}")
                     raise ValueError(f"Failed to parse analysis result: {e}")
             else:
-                logger.error("Unexpected response format from OpenRouter API")
-                raise ValueError("Received unexpected response format from OpenRouter API")
+                logger.error("No choices in API response or choices array is empty")
+                logger.error(f"Result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
+                logger.error(f"Full response: {json.dumps(result)[:1000]}")
+                if fallback_to_mock:
+                    logger.info("Falling back to mock data due to missing choices")
+                    return generate_mock_analysis(resume_text)
+                else:
+                    raise ValueError("API response missing 'choices' field or it's empty")
         
         elif response.status_code == 401:
             error_msg = "Authentication failed with OpenRouter API. Please check your API key or try regenerating it."
